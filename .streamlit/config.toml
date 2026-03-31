@@ -1,0 +1,22 @@
+[server]
+headless = true
+
+[theme]
+primaryColor = "#185FA5"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f5f5f5"
+textColor = "#1a1a1a"
+
+[browser]
+gatherUsageStats = false
+```
+
+**`requirements.txt`**
+```
+streamlit==1.35.0
+gspread==6.1.2
+pandas==2.2.2
+plotly==5.22.0
+requests==2.32.3
+anthropic==0.28.0
+google-auth==2.30.0
