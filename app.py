@@ -118,7 +118,7 @@ else:
             except ValueError:
                 default_end = datetime.today().date()
 
-            currency_options = ["TWD", "USD", "JPY", "EUR", "HKD"]
+            currency_options = ["TWD", "USD", "JPY", "EUR", "HKD", "GBP"]
             default_currency_idx = (
                 currency_options.index(current["base_currency"])
                 if current["base_currency"] in currency_options else 0
