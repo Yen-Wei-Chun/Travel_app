@@ -62,6 +62,7 @@ def render_map_controls(rows: list[dict], selected_idx: int = 0) -> None:
     with c1:
         if st.button("🗺️ 整趟路線", use_container_width=True, key="map_ctrl_route"):
             st.session_state["selected_stop_idx"] = 0
+            st.query_params["stop_idx"] = "0"
             st.rerun()
     row = rows[min(selected_idx, len(rows) - 1)]
     single_url = build_single_url(row.get("location",""), row.get("lat"), row.get("lng"))

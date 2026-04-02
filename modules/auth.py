@@ -3,7 +3,7 @@ import uuid
 import random
 import string
 from datetime import datetime
-from modules.db import read_sheet, append_row
+from modules.db import read_sheet, append_row, update_row
 
 def _generate_trip_id() -> str:
     return str(uuid.uuid4())[:8]
@@ -84,6 +84,9 @@ def require_auth() -> dict:
         st.warning("請先從首頁輸入旅程代碼加入旅程")
         st.stop()
     return user
+
+def update_trip(trip_id: str, updates: dict) -> bool:
+    return update_row("trips", "trip_id", trip_id, updates)
 
 def logout():
     for key in ["trip_id", "trip_name", "member_name", "base_currency", "authenticated"]:

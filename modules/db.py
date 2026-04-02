@@ -31,6 +31,8 @@ def read_sheet(sheet_name: str, trip_id: str = None) -> pd.DataFrame:
     df = pd.DataFrame(records)
     if df.empty:
         return df
+    if sheet_name == "itinerary":
+        df = df.drop(columns=["route"], errors="ignore")
     if trip_id and "trip_id" in df.columns:
         df = df[df["trip_id"] == trip_id]
     return df.reset_index(drop=True)
@@ -39,7 +41,8 @@ def append_row(sheet_name: str, data: dict) -> bool:
     try:
         ws = _get_sheet(sheet_name)
         headers = ws.row_values(1)
-        row = [data.get(h, "") for h in headers]
+        filtered = {k: v for k, v in data.items() if k != "route"}
+        row = [filtered.get(h, "") for h in headers]
         ws.append_row(row, value_input_option="USER_ENTERED")
         st.cache_data.clear()
         return True
@@ -62,7 +65,7 @@ def update_row(sheet_name: str, id_col: str, id_val: str, data: dict) -> bool:
 
         # 一次 batch update
         updates = []
-        for key, val in data.items():
+        for key, val in {k: v for k, v in data.items() if k != "route"}.items():
             if key in headers:
                 col = headers.index(key) + 1
                 updates.append({

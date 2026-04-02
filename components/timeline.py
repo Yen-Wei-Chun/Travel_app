@@ -42,12 +42,10 @@ def _build_html(groups: dict, selected_idx: int) -> str:
             transport = row.get("transport", "")
             duration  = row.get("duration", "")
             highlights = row.get("highlights", "")
-            route     = row.get("route", "")
             maps_url  = _maps_url(row)
 
             t_badge    = f'<span class="badge t-badge">{transport}</span>' if transport else ""
             d_badge    = f'<span class="badge d-badge">⏱ {duration}</span>' if duration else ""
-            route_row  = f'<div class="route">↑ {route}</div>' if route else ""
             hl_row     = f'<div class="hl">{highlights}</div>' if highlights else ""
             maps_btn   = (
                 f'<a class="maps-link" href="{maps_url}" target="_blank" '
@@ -59,7 +57,6 @@ def _build_html(groups: dict, selected_idx: int) -> str:
 <div class="stop {sel}" data-idx="{idx}" onclick="selectStop({idx})">
   <div class="axis"><div class="line"></div><div class="dot"></div></div>
   <div class="card">
-    {route_row}
     <div class="card-top">
       <span class="loc">{loc}</span>
       <div class="card-right">
@@ -107,7 +104,6 @@ body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   padding:2px 8px;border-radius:99px;border:.5px solid #B5D4F4;background:#EBF4FD;
   transition:background .12s;display:inline-block}}
 .maps-link:hover{{background:#d0e8f8}}
-.route{{font-size:11px;color:#AAA;margin-bottom:4px}}
 .hl{{font-size:12px;color:#666;margin-top:6px;padding-top:6px;
   border-top:.5px solid #F0F0F0;line-height:1.5}}
 </style></head><body>

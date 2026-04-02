@@ -1,5 +1,7 @@
-import uuid, json, requests
+import uuid, json, requests, base64, io
+import anthropic
 from collections import OrderedDict
+from PIL import Image
 import streamlit as st
 import streamlit.components.v1 as components
 
@@ -61,6 +63,31 @@ st.session_state.setdefault("edit_attr_id",     None)
 st.session_state.setdefault("show_import_panel", False)
 
 
+# ── 圖片工具函式 ─────────────────────────────────────────────────
+_CARD_COLORS = ["#96ceb4", "#ffeead", "#ff6f69", "#ffcc5c", "#88d8b0"]
+
+def _get_card_color(name: str) -> str:
+    idx = ord(name[0]) % len(_CARD_COLORS) if name else 0
+    return _CARD_COLORS[idx]
+
+def _compress_image(uploaded_file, max_size: int = 800) -> tuple[bytes, str]:
+    """壓縮圖片，最長邊縮到 max_size px，回傳 (bytes, mime_type)。"""
+    img = Image.open(uploaded_file)
+    img.thumbnail((max_size, max_size), Image.LANCZOS)
+    fmt = (img.format or "JPEG").upper()
+    if fmt == "JPG":
+        fmt = "JPEG"
+    mime = f"image/{fmt.lower()}"
+    buf = io.BytesIO()
+    img.save(buf, format=fmt, quality=85)
+    return buf.getvalue(), mime
+
+def _image_to_data_url(uploaded_file) -> str:
+    compressed, mime = _compress_image(uploaded_file)
+    b64 = base64.b64encode(compressed).decode()
+    return f"data:{mime};base64,{b64}"
+
+
 # ── 工具函式 ─────────────────────────────────────────────────────
 def _is_rainy(attr: dict) -> bool:
     return str(attr.get("is_rainy_day","")).strip().upper() in ("TRUE","1","YES","✓")
@@ -110,21 +137,13 @@ def _generate_attr_info(name: str, location: str, category: str) -> dict | None:
 }}"""
 
     try:
-        resp = requests.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            },
-            json={
-                "model": "claude-sonnet-4-20250514",
-                "max_tokens": 1500,
-                "messages": [{"role": "user", "content": prompt}],
-            },
-            timeout=30,
+        client   = anthropic.Anthropic(api_key=api_key)
+        response = client.messages.create(
+            model="claude-sonnet-4-5",
+            max_tokens=1500,
+            messages=[{"role": "user", "content": prompt}],
         )
-        raw  = resp.json()["content"][0]["text"].strip()
+        raw  = response.content[0].text.strip()
         raw  = raw.replace("```json","").replace("```","").strip()
         data = json.loads(raw)
         if isinstance(data.get("activities"), list):
@@ -160,15 +179,12 @@ def build_card_html(attr: dict) -> str:
     except Exception:
         activities = []
 
+    color       = _get_card_color(name)
     photo_inner = (
         f'<img src="{image_url}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0">'
         if image_url else
-        '<div style="display:flex;flex-direction:column;align-items:center;gap:6px">'
-        '<svg width="28" height="28" viewBox="0 0 32 32" fill="none">'
-        '<rect x="2" y="6" width="28" height="20" rx="4" stroke="#ccc" stroke-width="1.2"/>'
-        '<circle cx="11" cy="13" r="2.5" stroke="#ccc" stroke-width="1.2"/>'
-        '<path d="M2 22l7-6 5 5 4-4 7 7" stroke="#ccc" stroke-width="1.2" stroke-linecap="round"/>'
-        '</svg><span style="font-size:12px;color:#ccc">無圖片</span></div>'
+        f'<div style="background:{color};width:100%;height:100%;position:absolute;inset:0;'
+        f'border-radius:8px 8px 0 0"></div>'
     )
 
     tags_html = ""
@@ -406,7 +422,6 @@ if st.session_state["show_add_form"] and not st.session_state["edit_attr_id"]:
             dur      = g3.text_input("建議停留")
             ticket   = g4.text_input("門票資訊")
             history  = st.text_area("歷史故事", height=70)
-            img_url  = st.text_input("圖片網址", placeholder="https://...")
             s_col, c_col, _ = st.columns([1,1,4])
             submitted = s_col.form_submit_button("儲存", type="primary")
             cancelled = c_col.form_submit_button("取消")
@@ -419,7 +434,7 @@ if st.session_state["show_add_form"] and not st.session_state["edit_attr_id"]:
                     "trip_id": trip_id,
                     "name": name.strip(), "location": loc.strip(),
                     "description": desc.strip(), "tips": tips.strip(),
-                    "image_url": img_url.strip(), "category": category,
+                    "image_url": "", "category": category,
                     "is_rainy_day": "TRUE" if is_rainy else "FALSE",
                     "opening_hours": opening.strip(), "best_time": best_t.strip(),
                     "suggested_duration": dur.strip(), "ticket_price": ticket.strip(),
@@ -515,6 +530,45 @@ else:
                 card_h = 480 if is_draft else 708
                 components.html(build_card_html(attr), height=card_h, scrolling=False)
 
+                # ── 照片上傳 ──────────────────────────────────────
+                image_url    = (attr.get("image_url") or "").strip()
+                upload_label = "🔄 更換照片" if image_url else "📷 上傳照片"
+
+                if image_url:
+                    img_c1, img_c2 = st.columns(2)
+                    with img_c1:
+                        uploaded_file = st.file_uploader(
+                            upload_label,
+                            type=["jpg","jpeg","png","webp"],
+                            key=f"upload_{attr_id}",
+                        )
+                    with img_c2:
+                        st.write("")  # 垂直對齊用
+                        if st.button("🗑️ 移除照片", key=f"rm_img_{attr_id}",
+                                     use_container_width=True):
+                            update_row("attractions", "attr_id", attr_id,
+                                       {"image_url": ""})
+                            load_attractions.clear()
+                            st.rerun()
+                else:
+                    uploaded_file = st.file_uploader(
+                        upload_label,
+                        type=["jpg","jpeg","png","webp"],
+                        key=f"upload_{attr_id}",
+                    )
+
+                if uploaded_file is not None:
+                    file_fingerprint = f"{uploaded_file.name}_{uploaded_file.size}"
+                    processed_key    = f"_img_processed_{attr_id}"
+                    if st.session_state.get(processed_key) != file_fingerprint:
+                        with st.spinner("壓縮並儲存照片…"):
+                            data_url = _image_to_data_url(uploaded_file)
+                        update_row("attractions", "attr_id", attr_id,
+                                   {"image_url": data_url})
+                        st.session_state[processed_key] = file_fingerprint
+                        load_attractions.clear()
+                        st.rerun()
+
                 # AI 自動生成
                 if st.button("✨ 自動生成介紹", key=f"gen_{attr_id}",
                              use_container_width=True):
@@ -559,7 +613,6 @@ else:
                         e_ticket = eg4.text_input("門票資訊", value=attr.get("ticket_price",""))
                         e_hist   = st.text_area("歷史故事",   value=attr.get("history",""),    height=70)
                         e_acts   = st.text_area("必做活動（JSON）", value=attr.get("activities",""), height=55)
-                        e_img    = st.text_input("圖片網址",  value=attr.get("image_url",""))
                         es,ec,_ = st.columns([1,1,4])
                         e_sub = es.form_submit_button("儲存", type="primary")
                         e_can = ec.form_submit_button("取消")
@@ -570,7 +623,7 @@ else:
                             update_row("attractions", "attr_id", attr_id, {
                                 "name": e_name.strip(), "location": e_loc.strip(),
                                 "description": e_desc.strip(), "tips": e_tips.strip(),
-                                "image_url": e_img.strip(), "category": e_cat,
+                                "image_url": attr.get("image_url", ""), "category": e_cat,
                                 "is_rainy_day": "TRUE" if e_rainy else "FALSE",
                                 "opening_hours": e_open.strip(), "best_time": e_best.strip(),
                                 "suggested_duration": e_dur.strip(), "ticket_price": e_ticket.strip(),

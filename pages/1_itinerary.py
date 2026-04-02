@@ -6,13 +6,14 @@ import streamlit.components.v1 as components
 
 from modules.auth import require_auth, get_current_user
 from modules.db   import read_sheet, append_row, update_row, delete_row
-from modules.maps import geocode, geocode_rows, build_route_url
+from modules.maps import geocode, geocode_rows, build_route_url, extract_latng_from_url
 
 from components.timeline  import render_timeline
 from components.map_embed import render_map, render_map_controls
 
 st.set_page_config(page_title="行程總表", page_icon="🗺️", layout="wide")
 require_auth()
+
 user    = get_current_user()
 trip_id = user["trip_id"]
 
@@ -67,8 +68,11 @@ with col_h:
 with col_btn:
     route_url = build_route_url(rows)
     if route_url:
-        st.link_button("🗺️ 整趟路線 ↗", route_url,
+        st.link_button("🗺️ 在 Google Maps 開啟整趟路線", route_url,
                        use_container_width=True, type="primary")
+
+    else:
+        st.caption("新增至少兩個停留點後即可開啟路線導航")
 
 st.divider()
 
@@ -127,7 +131,6 @@ def build_overview_html(rows: list[dict]) -> str:
         rows_html = []
         for r in day_rows:
             loc        = r.get("location", "")
-            route      = r.get("route", "")
             transport  = r.get("transport", "")
             duration   = r.get("duration", "")
             highlights = r.get("highlights", "")
@@ -136,11 +139,10 @@ def build_overview_html(rows: list[dict]) -> str:
                        if transport else "")
 
             rows_html.append(f"""<tr>
-  <td style="width:30%">{loc_html}</td>
-  <td style="width:25%;color:#888;font-size:12px;vertical-align:top">{route}</td>
-  <td style="width:15%;vertical-align:top">{t_badge}</td>
-  <td style="width:10%;white-space:nowrap;color:#888;font-size:12px;vertical-align:top">{duration}</td>
-  <td style="width:20%;font-size:12px;color:#555;line-height:1.6;vertical-align:top">{highlights}</td>
+  <td style="width:35%">{loc_html}</td>
+  <td style="width:20%;vertical-align:top">{t_badge}</td>
+  <td style="width:15%;white-space:nowrap;color:#888;font-size:12px;vertical-align:top">{duration}</td>
+  <td style="width:30%;font-size:12px;color:#555;line-height:1.6;vertical-align:top">{highlights}</td>
 </tr>""")
 
         day_blocks.append(f"""
@@ -153,15 +155,13 @@ def build_overview_html(rows: list[dict]) -> str:
   </div>
   <table>
     <colgroup>
-      <col style="width:30%">
-      <col style="width:25%">
-      <col style="width:15%">
-      <col style="width:10%">
+      <col style="width:35%">
       <col style="width:20%">
+      <col style="width:15%">
+      <col style="width:30%">
     </colgroup>
     <thead><tr>
       <th>地點名稱</th>
-      <th>前往方式</th>
       <th>交通</th>
       <th>停留時間</th>
       <th>行程亮點</th>
@@ -222,7 +222,7 @@ with st.expander("✏️ 編輯行程", expanded=False):
     show_rows    = [r for r in rows if not filter_dates
                     or str(r.get("date","")) in filter_dates]
 
-    EDIT_COLS   = ["date","location","route","transport","duration","highlights"]
+    EDIT_COLS   = ["date","location","transport","duration","highlights"]
     HIDDEN_COLS = ["row_id","trip_id","lat","lng"]
 
     df = pd.DataFrame(show_rows, columns=EDIT_COLS + HIDDEN_COLS) if show_rows \
@@ -236,19 +236,19 @@ with st.expander("✏️ 編輯行程", expanded=False):
 
     col_cfg = {
         "_sel":       st.column_config.CheckboxColumn("選擇", default=False),
-        "date":       st.column_config.DateColumn("日期", required=True),
+        "date":       st.column_config.DateColumn("日期", required=True, format="YYYY-MM-DD"),
         "location":   st.column_config.TextColumn("地點名稱", required=True, width="medium"),
-        "route":      st.column_config.TextColumn("前往方式", width="medium"),
         "transport":  st.column_config.SelectboxColumn(
                           "交通方式",
                           options=["飛機","火車","地鐵","公車","計程車","步行","租車","輪船","其他"]
                       ),
         "duration":   st.column_config.TextColumn("停留時間", width="small"),
         "highlights": st.column_config.TextColumn("行程亮點", width="large"),
-        "row_id":     st.column_config.TextColumn("row_id",  disabled=True),
-        "trip_id":    st.column_config.TextColumn("trip_id", disabled=True),
-        "lat":        st.column_config.NumberColumn("緯度", disabled=True, format="%.6f"),
-        "lng":        st.column_config.NumberColumn("經度", disabled=True, format="%.6f"),
+        "row_id":     None,
+        "trip_id":    None,
+        "lat":        None,
+        "lng":        None,
+        "route":      None,
     }
 
     edited = st.data_editor(
@@ -256,9 +256,98 @@ with st.expander("✏️ 編輯行程", expanded=False):
         use_container_width=True, hide_index=True, key="itin_editor",
     )
 
-    # 讀取勾選的列
-    selected_mask = edited["_sel"].fillna(False).astype(bool)
-    delete_selections = edited.loc[selected_mask, "location"].tolist()
+    # ── 手動修正座標 ──────────────────────────────────────────────
+    with st.expander("📍 手動修正某個地點的座標"):
+        loc_options = [r.get("location","") for r in show_rows if r.get("location")]
+        if not loc_options:
+            st.info("目前沒有停留點可修正。")
+        else:
+            fix_loc = st.selectbox("選擇要修正的地點", loc_options, key="fix_loc_select")
+            fix_url = st.text_input("貼上 Google Maps 分享連結", key="fix_maps_url")
+
+            if st.button("🔍 解析座標", key="fix_parse_btn"):
+                st.session_state.pop("_fix_lat", None)
+                st.session_state.pop("_fix_lng", None)
+                st.session_state["_fix_manual"] = False
+                st.session_state["_fix_msg"] = None
+
+                if not fix_url.strip():
+                    st.session_state["_fix_msg"] = ("warning", "請先貼上 Google Maps 連結。")
+                elif "maps.app.goo.gl" in fix_url:
+                    try:
+                        lat, lng = extract_latng_from_url(fix_url)
+                    except Exception:
+                        lat, lng = None, None
+                    if lat is None:
+                        st.session_state["_fix_msg"] = (
+                            "warning", "短網址無法解析，請改用完整 Google Maps 連結。"
+                        )
+                    else:
+                        st.session_state["_fix_lat"] = lat
+                        st.session_state["_fix_lng"] = lng
+                        st.session_state["_fix_msg"] = (
+                            "success", f"解析成功：緯度 {lat}、經度 {lng}"
+                        )
+                else:
+                    lat, lng = extract_latng_from_url(fix_url)
+                    if lat is not None:
+                        st.session_state["_fix_lat"] = lat
+                        st.session_state["_fix_lng"] = lng
+                        st.session_state["_fix_msg"] = (
+                            "success", f"解析成功：緯度 {lat}、經度 {lng}"
+                        )
+                    else:
+                        st.session_state["_fix_manual"] = True
+                        st.session_state["_fix_msg"] = (
+                            "warning", "無法自動解析，請手動輸入座標"
+                        )
+
+            # 顯示訊息
+            msg = st.session_state.get("_fix_msg")
+            if msg:
+                getattr(st, msg[0])(msg[1])
+
+            # 解析成功 → 顯示套用按鈕
+            if st.session_state.get("_fix_lat") is not None:
+                fix_lat = st.session_state["_fix_lat"]
+                fix_lng = st.session_state["_fix_lng"]
+                if st.button("✅ 套用座標", key="fix_apply_btn"):
+                    target = next((r for r in show_rows if r.get("location") == fix_loc), None)
+                    if target and target.get("row_id"):
+                        update_row("itinerary", "row_id", target["row_id"],
+                                   {"lat": fix_lat, "lng": fix_lng})
+                        st.session_state.pop("_fix_lat", None)
+                        st.session_state.pop("_fix_lng", None)
+                        st.session_state["_fix_msg"] = None
+                        load_rows.clear()
+                        st.success("座標已更新！")
+                        st.rerun()
+                    else:
+                        st.error("找不到對應的 row_id，請重新整理後再試。")
+
+            # 解析失敗 → 顯示手動輸入
+            elif st.session_state.get("_fix_manual"):
+                fix_lat = st.number_input("緯度", value=0.0, format="%.6f", key="fix_manual_lat")
+                fix_lng = st.number_input("經度", value=0.0, format="%.6f", key="fix_manual_lng")
+                if st.button("✅ 套用座標", key="fix_manual_apply_btn"):
+                    target = next((r for r in show_rows if r.get("location") == fix_loc), None)
+                    if target and target.get("row_id"):
+                        update_row("itinerary", "row_id", target["row_id"],
+                                   {"lat": fix_lat, "lng": fix_lng})
+                        st.session_state["_fix_manual"] = False
+                        st.session_state["_fix_msg"] = None
+                        load_rows.clear()
+                        st.success("座標已更新！")
+                        st.rerun()
+                    else:
+                        st.error("找不到對應的 row_id，請重新整理後再試。")
+
+    # 讀取勾選的列（用 row_id 而非 location，避免同名地點誤刪）
+    selected_mask   = edited["_sel"].fillna(False).astype(bool)
+    selected_row_ids = [
+        rid for rid in edited.loc[selected_mask, "row_id"].tolist()
+        if rid
+    ]
 
     save_col, del_col, hint_col = st.columns([1, 1, 2])
     with save_col:
@@ -266,26 +355,27 @@ with st.expander("✏️ 編輯行程", expanded=False):
     with del_col:
         delete_clicked = st.button(
             "🗑️ 刪除選中列",
-            disabled=not delete_selections,
+            disabled=not selected_row_ids,
             use_container_width=True,
         )
     with hint_col:
         st.caption("儲存時自動補齊 Geocoding 座標。")
 
-    if delete_clicked and delete_selections:
-        selected_row_ids = [
-            r["row_id"] for r in show_rows
-            if r.get("location") in delete_selections and r.get("row_id")
-        ]
-        st.session_state["pending_delete_ids"] = selected_row_ids
-        st.session_state["pending_delete_names"] = list(delete_selections)
+    if delete_clicked and selected_row_ids:
+        id_to_label = {
+            r["row_id"]: f"{r.get('date', '')}　{r.get('location', '')}"
+            for r in show_rows if r.get("row_id")
+        }
+        delete_labels = [id_to_label.get(rid, rid) for rid in selected_row_ids]
+        st.session_state["pending_delete_ids"]    = selected_row_ids
+        st.session_state["pending_delete_labels"] = delete_labels
         st.rerun()
 
-    pending = st.session_state.get("pending_delete_ids", [])
-    pending_names = st.session_state.get("pending_delete_names", [])
-    if pending_names:
-        names_str = "、".join(pending_names)
-        st.warning(f"確認刪除「{names_str}」共 {len(pending)} 筆？此操作無法復原。")
+    pending        = st.session_state.get("pending_delete_ids", [])
+    pending_labels = st.session_state.get("pending_delete_labels", [])
+    if pending:
+        label_list = "　".join(f"「{l}」" for l in pending_labels)
+        st.warning(f"確認刪除以下 {len(pending)} 筆？此操作無法復原。\n{label_list}")
         confirm_col, cancel_col = st.columns([1, 1])
         with confirm_col:
             if st.button("✅ 確認刪除", type="primary", use_container_width=True):
@@ -293,13 +383,13 @@ with st.expander("✏️ 編輯行程", expanded=False):
                     for rid in pending:
                         delete_row("itinerary", "row_id", rid)
                 st.session_state.pop("pending_delete_ids", None)
-                st.session_state.pop("pending_delete_names", None)
+                st.session_state.pop("pending_delete_labels", None)
                 load_rows.clear()
                 st.rerun()
         with cancel_col:
             if st.button("❌ 取消", use_container_width=True):
                 st.session_state.pop("pending_delete_ids", None)
-                st.session_state.pop("pending_delete_names", None)
+                st.session_state.pop("pending_delete_labels", None)
                 st.rerun()
 
     if save:
@@ -337,7 +427,7 @@ with st.expander("✏️ 編輯行程", expanded=False):
                 orig = original_map.get(row_id, {})
                 changed = any(
                     str(r.get(col,"")) != str(orig.get(col,""))
-                    for col in ["date","location","route","transport","duration","highlights"]
+                    for col in ["date","location","transport","duration","highlights"]
                 )
                 if not changed:
                     continue
@@ -350,7 +440,6 @@ with st.expander("✏️ 編輯行程", expanded=False):
                 update_row("itinerary", "row_id", row_id, {
                     "date":       str(r.get("date","")),
                     "location":   r.get("location",""),
-                    "route":      r.get("route",""),
                     "transport":  r.get("transport",""),
                     "duration":   r.get("duration",""),
                     "highlights": r.get("highlights",""),
