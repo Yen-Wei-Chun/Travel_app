@@ -1,4 +1,5 @@
 import re
+import math
 import requests
 import streamlit as st
 from urllib.parse import quote, urlencode
@@ -84,7 +85,10 @@ def geocode_rows(rows: list[dict]) -> list[dict]:
     for row in rows:
         r = dict(row)
         try:
-            float(r["lat"]); float(r["lng"])
+            lat = float(r["lat"])
+            lng = float(r["lng"])
+            if math.isnan(lat) or math.isnan(lng):
+                raise ValueError("NaN coordinate")
             result.append(r)
             continue
         except (TypeError, ValueError, KeyError):
@@ -109,30 +113,20 @@ def build_single_url(location: str, lat=None, lng=None) -> str:
 # ── 3. 整趟路線連結（waypoints） ────────────────────────────────
 def build_route_url(stops: list[dict]) -> str:
     """
-    組合 Google Maps 路線連結（query parameter 格式，對中日文地名更穩定）。
-    去重保留順序，不指定 travelmode 讓使用者自行選擇。
+    組合 Google Maps 路線連結，使用 lat/lng 座標（比地名更精確）。
+    不指定 travelmode 讓使用者自行選擇。
     """
-    valid = [s for s in stops if s.get("location")]
+    valid = [s for s in stops if s.get("lat") and s.get("lng")]
     if len(valid) < 2:
         return ""
 
-    seen = set()
-    unique_stops = []
-    for s in valid:
-        if s["location"] not in seen:
-            seen.add(s["location"])
-            unique_stops.append(s)
-
-    if len(unique_stops) < 2:
-        return ""
-
-    origin = quote(unique_stops[0]["location"], safe="")
-    destination = quote(unique_stops[-1]["location"], safe="")
+    origin = f"{valid[0]['lat']},{valid[0]['lng']}"
+    destination = f"{valid[-1]['lat']},{valid[-1]['lng']}"
     url = f"https://www.google.com/maps/dir/?api=1&origin={origin}&destination={destination}"
 
-    if len(unique_stops) > 2:
-        waypoints = quote("|".join(s["location"] for s in unique_stops[1:-1]), safe="|")
-        url += f"&waypoints={waypoints}"
+    if len(valid) > 2:
+        waypoints = "|".join(f"{s['lat']},{s['lng']}" for s in valid[1:-1])
+        url += f"&waypoints={quote(waypoints, safe=',|')}"
 
     return url
 

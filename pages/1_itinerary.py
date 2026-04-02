@@ -25,6 +25,8 @@ st.session_state.setdefault("selected_stop_idx", 0)
 @st.cache_data(ttl=60, show_spinner=False)
 def load_rows(trip_id: str) -> list[dict]:
     df = read_sheet("itinerary", trip_id)
+    df["lat"] = pd.to_numeric(df["lat"], errors="coerce")
+    df["lng"] = pd.to_numeric(df["lng"], errors="coerce")
     return geocode_rows(df.to_dict("records"))
 
 @st.cache_data(ttl=300, show_spinner=False)
