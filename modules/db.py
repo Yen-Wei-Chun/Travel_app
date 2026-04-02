@@ -81,6 +81,8 @@ def update_row(sheet_name: str, id_col: str, id_val: str, data: dict) -> bool:
         st.error(f"更新失敗：{e}")
         return False
 
+
+
 def delete_row(sheet_name: str, id_col: str, id_val: str) -> bool:
     try:
         ws = _get_sheet(sheet_name)

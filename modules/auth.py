@@ -2,7 +2,7 @@ import streamlit as st
 import uuid
 import random
 import string
-from datetime import datetime
+from datetime import datetime, timedelta
 from modules.db import read_sheet, append_row, update_row
 
 def _generate_trip_id() -> str:
@@ -86,7 +86,44 @@ def require_auth() -> dict:
     return user
 
 def update_trip(trip_id: str, updates: dict) -> bool:
-    return update_row("trips", "trip_id", trip_id, updates)
+    # 若有更新 start_date，先讀舊值（需在寫入前讀取）
+    old_start = None
+    if "start_date" in updates:
+        trips_df = read_sheet("trips")
+        matched = trips_df[trips_df["trip_id"] == trip_id]
+        if not matched.empty:
+            try:
+                old_start = datetime.strptime(str(matched.iloc[0]["start_date"]), "%Y-%m-%d")
+            except ValueError:
+                old_start = None
+
+    result = update_row("trips", "trip_id", trip_id, updates)
+    if not result:
+        return False
+
+    # 連動更新 itinerary 各列日期
+    if old_start is not None:
+        try:
+            new_start = datetime.strptime(str(updates["start_date"]), "%Y-%m-%d")
+        except ValueError:
+            new_start = old_start
+
+        if old_start != new_start:
+            delta = new_start - old_start
+            itin_df = read_sheet("itinerary")
+            if not itin_df.empty and "trip_id" in itin_df.columns:
+                trip_rows = itin_df[itin_df["trip_id"] == trip_id]
+                for _, row in trip_rows.iterrows():
+                    try:
+                        old_date = datetime.strptime(str(row["date"]), "%Y-%m-%d")
+                        new_date = old_date + delta
+                        update_row("itinerary", "row_id", row["row_id"],
+                                   {"date": new_date.strftime("%Y-%m-%d")})
+                    except (ValueError, KeyError):
+                        continue
+
+    st.cache_data.clear()
+    return True
 
 def logout():
     for key in ["trip_id", "trip_name", "member_name", "base_currency", "authenticated"]:

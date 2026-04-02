@@ -37,8 +37,19 @@ def load_destination(trip_id: str) -> str:
         return ""
     return str(matched.iloc[0].get("destination", "") or "")
 
+@st.cache_data(ttl=300, show_spinner=False)
+def load_trip_start_date(trip_id: str) -> str:
+    df = read_sheet("trips")
+    if df.empty:
+        return ""
+    matched = df[df["trip_id"] == trip_id]
+    if matched.empty:
+        return ""
+    return str(matched.iloc[0].get("start_date", "") or "")
+
 rows = load_rows(trip_id)
 destination = load_destination(trip_id)
+trip_start_date = load_trip_start_date(trip_id)
 
 
 # query_params 橋接
@@ -119,51 +130,73 @@ def _fmt_date_full(s: str) -> str:
         return s
 
 
-def build_overview_html(rows: list[dict]) -> str:
+def build_overview_html(rows: list[dict], trip_start_date: str = "") -> str:
     from collections import OrderedDict
+    from datetime import date as dt_date
+
+    try:
+        start_dt = dt_date.fromisoformat(trip_start_date)
+    except Exception:
+        start_dt = None
+
     groups: OrderedDict = OrderedDict()
     for r in sorted(rows, key=lambda x: str(x.get("date", ""))):
         groups.setdefault(str(r.get("date", "未指定")), []).append(r)
 
     day_blocks = []
-    for day_num, (date_str, day_rows) in enumerate(groups.items()):
-        c = DAY_COLORS[day_num % len(DAY_COLORS)]
+    for seq_num, (date_str, day_rows) in enumerate(groups.items()):
+        if start_dt:
+            try:
+                row_dt = dt_date.fromisoformat(date_str)
+                day_n = (row_dt - start_dt).days + 1
+            except Exception:
+                day_n = seq_num + 1
+        else:
+            day_n = seq_num + 1
+
+        c = DAY_COLORS[(day_n - 1) % len(DAY_COLORS)]
         rows_html = []
         for r in day_rows:
-            loc        = r.get("location", "")
-            transport  = r.get("transport", "")
-            duration   = r.get("duration", "")
-            highlights = r.get("highlights", "")
-            loc_html = f'<div class="place">{loc}</div>'
-            t_badge = (f'<span class="badge">{transport}</span>'
-                       if transport else "")
+            time_val       = r.get("time", "") or ""
+            loc            = r.get("location", "") or ""
+            transport      = r.get("transport", "") or ""
+            transport_time = r.get("transport_time", "") or ""
+            highlights     = r.get("highlights", "") or ""
+
+            time_cell  = f'<span class="time-badge">{time_val}</span>' if time_val else "—"
+            loc_html   = f'<div class="place">{loc}</div>'
+            trans_cell = f'<span class="transport-badge">{transport}</span>' if transport else "—"
+            tt_cell    = transport_time if transport_time else "—"
 
             rows_html.append(f"""<tr>
-  <td style="width:35%">{loc_html}</td>
-  <td style="width:20%;vertical-align:top">{t_badge}</td>
-  <td style="width:15%;white-space:nowrap;color:#888;font-size:12px;vertical-align:top">{duration}</td>
-  <td style="width:30%;font-size:12px;color:#555;line-height:1.6;vertical-align:top">{highlights}</td>
+  <td style="width:10%">{time_cell}</td>
+  <td style="width:25%">{loc_html}</td>
+  <td style="width:15%;vertical-align:top">{trans_cell}</td>
+  <td style="width:15%;vertical-align:top;font-size:12px;color:#555">{tt_cell}</td>
+  <td style="width:35%;font-size:12px;color:#555;line-height:1.6;vertical-align:top">{highlights}</td>
 </tr>""")
 
         day_blocks.append(f"""
 <div class="day-block">
   <div class="day-header" style="background:{c['bg']};color:{c['text']}">
     <span class="day-tag" style="background:{c['tag_bg']};color:{c['tag_text']}">
-      DAY {day_num + 1}
+      DAY {day_n}
     </span>
     {_fmt_date_full(date_str)}
   </div>
   <table>
     <colgroup>
-      <col style="width:35%">
-      <col style="width:20%">
+      <col style="width:10%">
+      <col style="width:25%">
       <col style="width:15%">
-      <col style="width:30%">
+      <col style="width:15%">
+      <col style="width:35%">
     </colgroup>
     <thead><tr>
-      <th>地點名稱</th>
+      <th>時間</th>
+      <th>地點</th>
       <th>交通</th>
-      <th>停留時間</th>
+      <th>車程</th>
       <th>行程亮點</th>
     </tr></thead>
     <tbody>{"".join(rows_html)}</tbody>
@@ -186,13 +219,15 @@ thead tr{{background:#fafaf8}}
 th{{text-align:left;padding:8px 12px;font-weight:500;font-size:11px;
   letter-spacing:.04em;color:#999;border-bottom:.5px solid #e8e6e0;
   white-space:nowrap;overflow:hidden}}
-td{{padding:10px 12px;border-bottom:.5px solid #f0ede8;
+td{{padding:9px 10px;border-bottom:.5px solid #f0ede8;
   overflow:hidden;word-break:break-word}}
 tr:last-child td{{border-bottom:none}}
 tbody tr:hover{{background:#fafaf8}}
 .place{{font-weight:500;font-size:13px}}
-.badge{{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;
-  white-space:nowrap;border:.5px solid #e0deda;color:#888;background:#fafaf8}}
+.time-badge{{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;
+  border:.5px solid #d0d0d0;background:#f5f5f5;color:#666;white-space:nowrap}}
+.transport-badge{{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;
+  background:#E6F1FB;color:#0C447C;border:.5px solid #B5D4F4;white-space:nowrap}}
 </style></head><body>
 {"".join(day_blocks)}
 </body></html>"""
@@ -203,7 +238,7 @@ if rows:
     dates_count  = len({str(r.get("date","")) for r in rows})
     table_height = min(dates_count * 44 + len(rows) * 52 + 60, 900)
     components.html(
-        build_overview_html(rows),
+        build_overview_html(rows, trip_start_date),
         height=table_height, scrolling=True,
     )
 else:
@@ -222,7 +257,7 @@ with st.expander("✏️ 編輯行程", expanded=False):
     show_rows    = [r for r in rows if not filter_dates
                     or str(r.get("date","")) in filter_dates]
 
-    EDIT_COLS   = ["date","location","transport","duration","highlights"]
+    EDIT_COLS   = ["date","time","location","transport","transport_time","highlights"]
     HIDDEN_COLS = ["row_id","trip_id","lat","lng"]
 
     df = pd.DataFrame(show_rows, columns=EDIT_COLS + HIDDEN_COLS) if show_rows \
@@ -231,19 +266,24 @@ with st.expander("✏️ 編輯行程", expanded=False):
     if "date" in df.columns and not df.empty:
         df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.date
 
+    for _col in ["time", "location", "transport", "transport_time", "highlights"]:
+        if _col in df.columns:
+            df[_col] = df[_col].fillna("").astype(str).replace("0.0", "").replace("0", "")
+
     # 加入勾選欄位（放最前面）
     df.insert(0, "_sel", False)
 
     col_cfg = {
         "_sel":       st.column_config.CheckboxColumn("選擇", default=False),
         "date":       st.column_config.DateColumn("日期", required=True, format="YYYY-MM-DD"),
-        "location":   st.column_config.TextColumn("地點名稱", required=True, width="medium"),
-        "transport":  st.column_config.SelectboxColumn(
-                          "交通方式",
-                          options=["飛機","火車","地鐵","公車","計程車","步行","租車","輪船","其他"]
-                      ),
-        "duration":   st.column_config.TextColumn("停留時間", width="small"),
-        "highlights": st.column_config.TextColumn("行程亮點", width="large"),
+        "time":           st.column_config.TextColumn("時間", width="small", help="例如：09:00"),
+        "location":       st.column_config.TextColumn("地點名稱", required=True, width="medium"),
+        "transport":      st.column_config.SelectboxColumn(
+                              "交通方式",
+                              options=["飛機","火車","地鐵","公車","計程車","步行","租車","輪船","其他"]
+                          ),
+        "transport_time": st.column_config.TextColumn("車程", width="small", help="例如：約30分鐘"),
+        "highlights":     st.column_config.TextColumn("行程亮點", width="large"),
         "row_id":     None,
         "trip_id":    None,
         "lat":        None,
@@ -427,7 +467,7 @@ with st.expander("✏️ 編輯行程", expanded=False):
                 orig = original_map.get(row_id, {})
                 changed = any(
                     str(r.get(col,"")) != str(orig.get(col,""))
-                    for col in ["date","location","transport","duration","highlights"]
+                    for col in ["date","time","location","transport","transport_time","highlights"]
                 )
                 if not changed:
                     continue
@@ -438,14 +478,15 @@ with st.expander("✏️ 編輯行程", expanded=False):
                         r["lat"], r["lng"] = coords
 
                 update_row("itinerary", "row_id", row_id, {
-                    "date":       str(r.get("date","")),
-                    "location":   r.get("location",""),
-                    "transport":  r.get("transport",""),
-                    "duration":   r.get("duration",""),
-                    "highlights": r.get("highlights",""),
-                    "lat":        "" if pd.isna(r.get("lat","")) else r.get("lat",""),
-                    "lng":        "" if pd.isna(r.get("lng","")) else r.get("lng",""),
-                    "trip_id":    trip_id,
+                    "date":           str(r.get("date","")),
+                    "time":           r.get("time",""),
+                    "location":       r.get("location",""),
+                    "transport":      r.get("transport",""),
+                    "transport_time": r.get("transport_time",""),
+                    "highlights":     r.get("highlights",""),
+                    "lat":            "" if pd.isna(r.get("lat","")) else r.get("lat",""),
+                    "lng":            "" if pd.isna(r.get("lng","")) else r.get("lng",""),
+                    "trip_id":        trip_id,
                 })
                 saved += 1
                 time.sleep(1)

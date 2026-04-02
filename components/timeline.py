@@ -39,13 +39,13 @@ def _build_html(groups: dict, selected_idx: int) -> str:
             idx       = row["_idx"]
             sel       = "selected" if idx == selected_idx else ""
             loc       = row.get("location", "（未命名）")
-            transport = row.get("transport", "")
-            duration  = row.get("duration", "")
-            highlights = row.get("highlights", "")
-            maps_url  = _maps_url(row)
+            transport      = row.get("transport", "")
+            transport_time = row.get("transport_time", "")
+            highlights     = row.get("highlights", "")
+            maps_url       = _maps_url(row)
 
             t_badge    = f'<span class="badge t-badge">{transport}</span>' if transport else ""
-            d_badge    = f'<span class="badge d-badge">⏱ {duration}</span>' if duration else ""
+            tt_row     = f'<div class="tt">🚗 車程：{transport_time}</div>' if transport_time else ""
             hl_row     = f'<div class="hl">{highlights}</div>' if highlights else ""
             maps_btn   = (
                 f'<a class="maps-link" href="{maps_url}" target="_blank" '
@@ -60,11 +60,11 @@ def _build_html(groups: dict, selected_idx: int) -> str:
     <div class="card-top">
       <span class="loc">{loc}</span>
       <div class="card-right">
-        <span class="badges">{t_badge}{d_badge}</span>
+        <span class="badges">{t_badge}</span>
         {maps_btn}
       </div>
     </div>
-    {hl_row}
+    {tt_row}{hl_row}
   </div>
 </div>""")
 
@@ -99,11 +99,13 @@ body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 .badges{{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}}
 .badge{{font-size:11px;padding:2px 7px;border-radius:99px;white-space:nowrap}}
 .t-badge{{background:#EBF4FD;color:#0C447C;border:.5px solid #B5D4F4}}
-.d-badge{{background:#F5F5F5;color:#555;border:.5px solid #DDD}}
 .maps-link{{font-size:11px;color:#185FA5;text-decoration:none;white-space:nowrap;
   padding:2px 8px;border-radius:99px;border:.5px solid #B5D4F4;background:#EBF4FD;
   transition:background .12s;display:inline-block}}
 .maps-link:hover{{background:#d0e8f8}}
+.tt{{font-size:12px;color:#888;margin-top:6px;padding-top:6px;
+  border-top:.5px solid #F0F0F0;line-height:1.5}}
+.tt+.hl{{border-top:none;margin-top:2px;padding-top:2px}}
 .hl{{font-size:12px;color:#666;margin-top:6px;padding-top:6px;
   border-top:.5px solid #F0F0F0;line-height:1.5}}
 </style></head><body>

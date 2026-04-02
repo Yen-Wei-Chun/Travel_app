@@ -169,6 +169,13 @@ else:
                     if ok:
                         st.session_state["trip_name"] = new_name
                         st.session_state["base_currency"] = new_currency
+                        st.session_state["current_trip"] = {
+                            **current.to_dict(),
+                            "trip_name": new_name,
+                            "start_date": str(new_start),
+                            "end_date": str(new_end),
+                            "base_currency": new_currency,
+                        }
                         st.session_state["show_edit_trip"] = False
                         st.success("設定已儲存！")
                         st.rerun()
