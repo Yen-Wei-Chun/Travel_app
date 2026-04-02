@@ -29,13 +29,6 @@ def load_rows(trip_id: str) -> list[dict]:
     df["lng"] = pd.to_numeric(df["lng"], errors="coerce")
     rows = df.to_dict("records")
 
-    # DEBUG：暫時加入，確認後移除
-    from modules.maps import _maps_key
-    st.sidebar.write("Maps API Key 存在：", bool(_maps_key()))
-    st.sidebar.write("第一筆 lat/lng：",
-                     rows[0].get("lat") if rows else "無資料",
-                     rows[0].get("lng") if rows else "無資料")
-
     return geocode_rows(rows)
 
 @st.cache_data(ttl=300, show_spinner=False)

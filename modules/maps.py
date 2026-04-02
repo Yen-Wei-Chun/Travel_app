@@ -7,8 +7,17 @@ from urllib.parse import quote, urlencode
 
 # ── 讀取 API Key ────────────────────────────────────────────────
 def _maps_key() -> str:
+    """前端用：Maps Embed API"""
     try:
         return st.secrets["maps_api_key"]
+    except Exception:
+        return ""
+
+
+def _geocoding_key() -> str:
+    """後端用：Geocoding API"""
+    try:
+        return st.secrets["geocoding_api_key"]
     except Exception:
         return ""
 
@@ -57,7 +66,7 @@ def geocode(location: str, hint: str = "") -> tuple[float, float] | None:
     快取 24 小時，相同地名不重複呼叫 API。
     hint 可傳入旅遊目的地，提升搜尋準確度（例如 "日本關西"）。
     """
-    api_key = _maps_key()
+    api_key = _geocoding_key()
     if not api_key or not location.strip():
         return None
     query = f"{location} {hint}".strip()
