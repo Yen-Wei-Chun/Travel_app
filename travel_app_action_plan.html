@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>旅遊規劃 App — Action Plan</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:#1a1a1a;background:#f5f5f5;padding:2rem 1rem}
+  .container{max-width:900px;margin:0 auto}
+  h1{font-size:20px;font-weight:600;margin-bottom:4px}
+  .subtitle{font-size:13px;color:#666;margin-bottom:1.5rem}
+  .summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem}
+  .metric{background:#fff;border-radius:8px;padding:12px 14px;border:0.5px solid #e0e0e0}
+  .metric-label{font-size:12px;color:#888;margin-bottom:4px}
+  .metric-val{font-size:20px;font-weight:600}
+  .phase{margin-bottom:10px;border:0.5px solid #e0e0e0;border-radius:12px;overflow:hidden;background:#fff}
+  .phase-header{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:0.5px solid #e0e0e0;cursor:pointer;user-select:none}
+  .phase-header:hover{background:#f9f9f9}
+  .phase-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px;white-space:nowrap}
+  .phase-title{font-size:14px;font-weight:600;flex:1}
+  .phase-meta{font-size:12px;color:#888;white-space:nowrap}
+  .chevron{width:16px;height:16px;flex-shrink:0;transition:transform .2s;color:#888}
+  .chevron.open{transform:rotate(180deg)}
+  .step-table{width:100%;border-collapse:collapse;table-layout:fixed}
+  .step-table th{font-size:11px;font-weight:600;color:#888;letter-spacing:.04em;padding:7px 14px;text-align:left;background:#fafafa;border-bottom:0.5px solid #e0e0e0}
+  .step-table th:nth-child(1){width:32px}
+  .step-table th:nth-child(2){width:21%}
+  .step-table th:nth-child(3){width:35%}
+  .step-table th:nth-child(4){width:19%}
+  .step-table th:nth-child(5){width:14%}
+  .step-table td{padding:8px 14px;vertical-align:top;border-bottom:0.5px solid #f0f0f0;font-size:13px;line-height:1.5}
+  .step-table tr:last-child td{border-bottom:none}
+  .step-table tr:hover td{background:#fafafa}
+  .step-num{font-size:12px;font-weight:600;color:#bbb}
+  .tag{display:inline-block;font-size:11px;padding:2px 7px;border-radius:99px;white-space:nowrap}
+  .tag-lib{background:#E6F1FB;color:#0C447C;border:0.5px solid #B5D4F4}
+  .tag-api{background:#EEEDFE;color:#3C3489;border:0.5px solid #CECBF6}
+  .tag-ui{background:#E1F5EE;color:#085041;border:0.5px solid #9FE1CB}
+  .tag-data{background:#FAEEDA;color:#633806;border:0.5px solid #FAC775}
+  .tag-logic{background:#FAECE7;color:#712B13;border:0.5px solid #F5C4B3}
+  .tag-deploy{background:#EAF3DE;color:#27500A;border:0.5px solid #C0DD97}
+  .tag-ai{background:#FBEAF0;color:#72243E;border:0.5px solid #F4C0D1}
+  .note-cell{font-size:12px;color:#555;line-height:1.5}
+  .effort{font-size:12px;color:#888;white-space:nowrap}
+  .new-row td{background:#fdf8ff}
+  .new-badge{font-size:10px;padding:1px 6px;border-radius:99px;background:#EEEDFE;color:#3C3489;border:0.5px solid #CECBF6;vertical-align:middle;margin-left:4px}
+  @media(max-width:600px){
+    .summary-grid{grid-template-columns:repeat(2,1fr)}
+    .step-table th:nth-child(3),.step-table td:nth-child(3){display:none}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>旅遊規劃 App — 完整 Action Plan</h1>
+  <div class="subtitle">Streamlit + Google Sheets + Claude Vision · 最後更新：2025</div>
+
+  <div class="summary-grid">
+    <div class="metric"><div class="metric-label">總 Phase 數</div><div class="metric-val">6</div></div>
+    <div class="metric"><div class="metric-label">總步驟數</div><div class="metric-val">35</div></div>
+    <div class="metric"><div class="metric-label">預估總工時</div><div class="metric-val">~33 hr</div></div>
+    <div class="metric"><div class="metric-label">部署平台</div><div class="metric-val" style="font-size:14px;padding-top:4px">Streamlit Cloud</div></div>
+  </div>
+
+  <!-- Phase 1 -->
+  <div class="phase" id="p1">
+    <div class="phase-header" onclick="toggle('p1')">
+      <span class="phase-badge tag-lib">Phase 1</span>
+      <span class="phase-title">環境設定 &amp; 外部服務申請</span>
+      <span class="phase-meta">5 步驟 · ~3 hr</span>
+      <svg class="chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="phase-body" style="display:none">
+      <table class="step-table">
+        <thead><tr><th>#</th><th>步驟</th><th>說明</th><th>工具 / 服務</th><th>預估時間</th></tr></thead>
+        <tbody>
+          <tr><td class="step-num">1</td><td>建立 Python 虛擬環境</td><td class="note-cell">安裝 streamlit、gspread、pandas、plotly、requests、anthropic；建立 requirements.txt</td><td><span class="tag tag-lib">pip</span></td><td class="effort">20 min</td></tr>
+          <tr><td class="step-num">2</td><td>Google Cloud 專案 &amp; Service Account</td><td class="note-cell">開啟 Sheets API + Drive API；下載 JSON 金鑰；記錄 service account email</td><td><span class="tag tag-api">Google Cloud</span></td><td class="effort">30 min</td></tr>
+          <tr><td class="step-num">3</td><td>Google Maps API 申請</td><td class="note-cell">開啟 Maps Embed API + Geocoding API；取得 API Key；設定 HTTP referrer 限制</td><td><span class="tag tag-api">Google Cloud</span></td><td class="effort">20 min</td></tr>
+          <tr><td class="step-num">4</td><td>Streamlit secrets 設定</td><td class="note-cell">建立 .streamlit/secrets.toml；存入 gcp_service_account JSON、maps_api_key、anthropic_api_key</td><td><span class="tag tag-lib">Streamlit</span></td><td class="effort">15 min</td></tr>
+          <tr><td class="step-num">5</td><td>GitHub repo 初始化</td><td class="note-cell">建立 repo；設定 .gitignore（排除 secrets.toml）；推送初始結構</td><td><span class="tag tag-deploy">GitHub</span></td><td class="effort">15 min</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Phase 2 -->
+  <div class="phase" id="p2">
+    <div class="phase-header" onclick="toggle('p2')">
+      <span class="phase-badge tag-data">Phase 2</span>
+      <span class="phase-title">Google Sheets 資料庫設計</span>
+      <span class="phase-meta">6 步驟 · ~3 hr</span>
+      <svg class="chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="phase-body" style="display:none">
+      <table class="step-table">
+        <thead><tr><th>#</th><th>步驟</th><th>說明</th><th>工具 / 服務</th><th>預估時間</th></tr></thead>
+        <tbody>
+          <tr><td class="step-num">1</td><td>建立 Google Sheets 主檔</td><td class="note-cell">新增 Spreadsheet；共用給 service account email（編輯者權限）</td><td><span class="tag tag-data">Google Sheets</span></td><td class="effort">10 min</td></tr>
+          <tr><td class="step-num">2</td><td>建立 trips &amp; members 表</td><td class="note-cell">trips：trip_id、join_code、trip_name、dates、base_currency；members：member_id、trip_id、name、joined_at</td><td><span class="tag tag-data">Google Sheets</span></td><td class="effort">20 min</td></tr>
+          <tr><td class="step-num">3</td><td>建立 itinerary 表</td><td class="note-cell">欄位：row_id、trip_id、date、location、route、transport、duration、highlights、lat、lng</td><td><span class="tag tag-data">Google Sheets</span></td><td class="effort">15 min</td></tr>
+          <tr><td class="step-num">4</td><td>建立 expenses &amp; expense_splits 表</td><td class="note-cell">expenses 含 paid_by、orig_currency、amount_orig、fx_rate、amount_base、split_type；splits 含每人 share_amount</td><td><span class="tag tag-data">Google Sheets</span></td><td class="effort">20 min</td></tr>
+          <tr><td class="step-num">5</td><td>建立 attractions &amp; notes 表</td><td class="note-cell">attractions：name、location、description、tips、image_url；notes：type、title、content、deadline、done</td><td><span class="tag tag-data">Google Sheets</span></td><td class="effort">15 min</td></tr>
+          <tr><td class="step-num">6</td><td>撰寫 db.py 資料層模組</td><td class="note-cell">封裝所有 gspread 讀寫操作；實作 read_sheet()、append_row()、update_row()；加入 @st.cache_data TTL 快取</td><td><span class="tag tag-lib">gspread</span></td><td class="effort">90 min</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Phase 3 -->
+  <div class="phase" id="p3">
+    <div class="phase-header" onclick="toggle('p3')">
+      <span class="phase-badge tag-api">Phase 3</span>
+      <span class="phase-title">身份系統：代碼加入 + Session 鎖定</span>
+      <span class="phase-meta">5 步驟 · ~4 hr</span>
+      <svg class="chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="phase-body" style="display:none">
+      <table class="step-table">
+        <thead><tr><th>#</th><th>步驟</th><th>說明</th><th>工具 / 服務</th><th>預估時間</th></tr></thead>
+        <tbody>
+          <tr><td class="step-num">1</td><td>首頁：建立旅程</td><td class="note-cell">輸入旅程名稱、日期、人數、base currency；後端產生 6 位 join_code 寫入 trips 表</td><td><span class="tag tag-ui">Streamlit</span></td><td class="effort">45 min</td></tr>
+          <tr><td class="step-num">2</td><td>首頁：輸入代碼加入</td><td class="note-cell">驗證 join_code 是否存在；輸入名字；寫入 members 表；若名字已存在則直接登入</td><td><span class="tag tag-ui">Streamlit</span></td><td class="effort">30 min</td></tr>
+          <tr><td class="step-num">3</td><td>Session 鎖定邏輯</td><td class="note-cell">成功加入後將 trip_id、member_name 存入 st.session_state；後續所有頁面透過 session 取得身份</td><td><span class="tag tag-lib">session_state</span></td><td class="effort">30 min</td></tr>
+          <tr><td class="step-num">4</td><td>旅程選擇頁</td><td class="note-cell">若 session 有效直接跳過登入；顯示「我的旅程」清單；支援切換多趟旅程</td><td><span class="tag tag-ui">Streamlit</span></td><td class="effort">45 min</td></tr>
+          <tr><td class="step-num">5</td><td>auth.py 模組封裝</td><td class="note-cell">抽出所有身份驗證邏輯；提供 get_current_user()、require_auth() 供各頁面呼叫</td><td><span class="tag tag-lib">Python</span></td><td class="effort">30 min</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Phase 4 -->
+  <div class="phase" id="p4">
+    <div class="phase-header" onclick="toggle('p4')">
+      <span class="phase-badge tag-ui">Phase 4</span>
+      <span class="phase-title">Tab 1 — 行程總表 + 地圖路線</span>
+      <span class="phase-meta">6 步驟 · ~6 hr</span>
+      <svg class="chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="phase-body" style="display:none">
+      <table class="step-table">
+        <thead><tr><th>#</th><th>步驟</th><th>說明</th><th>工具 / 服務</th><th>預估時間</th></tr></thead>
+        <tbody>
+          <tr><td class="step-num">1</td><td>互動式時間軸元件</td><td class="note-cell">左欄垂直時間軸；依日期分組；點擊展開停留點細節面板；手機版單欄顯示</td><td><span class="tag tag-ui">st.components</span></td><td class="effort">90 min</td></tr>
+          <tr><td class="step-num">2</td><td>Google Maps Embed 地圖</td><td class="note-cell">右欄嵌入 Maps Embed API iframe；顯示所有停留點 markers；點擊時間軸同步高亮地圖節點</td><td><span class="tag tag-api">Maps Embed API</span></td><td class="effort">60 min</td></tr>
+          <tr><td class="step-num">3</td><td>單點 Google Maps 連結</td><td class="note-cell">每個停留點自動產生 maps/search 連結；顯示為「在地圖開啟 ↗」</td><td><span class="tag tag-api">Maps URL</span></td><td class="effort">20 min</td></tr>
+          <tr><td class="step-num">4</td><td>整趟路線連結</td><td class="note-cell">組合 maps/dir + waypoints 參數；按鈕固定在頁面頂端；點擊開啟新分頁</td><td><span class="tag tag-api">Maps URL</span></td><td class="effort">20 min</td></tr>
+          <tr><td class="step-num">5</td><td>Geocoding 自動填座標</td><td class="note-cell">新增/編輯停留點時呼叫 Geocoding API 自動取得 lat/lng；失敗時提示手動輸入</td><td><span class="tag tag-api">Geocoding API</span></td><td class="effort">45 min</td></tr>
+          <tr><td class="step-num">6</td><td>行程表格 CRUD</td><td class="note-cell">下方 st.data_editor 可新增/編輯/刪除列；儲存即時寫回 Google Sheets；支援按日期篩選</td><td><span class="tag tag-ui">data_editor</span></td><td class="effort">60 min</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Phase 5 -->
+  <div class="phase" id="p5">
+    <div class="phase-header" onclick="toggle('p5')">
+      <span class="phase-badge tag-logic">Phase 5</span>
+      <span class="phase-title">Tab 2–4 — 景點 / 花費分帳 / 注意事項</span>
+      <span class="phase-meta">11 步驟 · ~13 hr</span>
+      <svg class="chevron open" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="phase-body">
+      <table class="step-table">
+        <thead><tr><th>#</th><th>步驟</th><th>說明</th><th>工具 / 服務</th><th>預估時間</th></tr></thead>
+        <tbody>
+          <tr><td class="step-num">1</td><td>Tab 2：景點卡片介紹</td><td class="note-cell">st.columns 卡片排列；顯示圖片、描述、tips；支援新增/編輯景點；按地點篩選</td><td><span class="tag tag-ui">Streamlit</span></td><td class="effort">60 min</td></tr>
+          <tr><td class="step-num">2</td><td>Tab 3：手動花費輸入表單</td><td class="note-cell">欄位：付款人、金額、原始幣別、類別、描述、分帳方式、涉及成員；自動帶入 session 使用者</td><td><span class="tag tag-ui">Streamlit</span></td><td class="effort">60 min</td></tr>
+          <tr class="new-row"><td class="step-num">3</td><td>拍照掃帳單入口 <span class="new-badge">NEW</span></td><td class="note-cell">Tab 3 頂端新增「掃描帳單」按鈕；展開 st.camera_input（手機）+ st.file_uploader（桌機）並排；支援 JPG / PNG</td><td><span class="tag tag-ai">Claude Vision</span></td><td class="effort">45 min</td></tr>
+          <tr class="new-row"><td class="step-num">4</td><td>receipt_scanner.py 模組 <span class="new-badge">NEW</span></td><td class="note-cell">圖片 bytes → base64 編碼 → 呼叫 claude-sonnet-4-6 Vision API；回傳嚴格 JSON（類別、item_zh、item_original、was_translated、amount、currency、confidence）</td><td><span class="tag tag-ai">Anthropic API</span></td><td class="effort">60 min</td></tr>
+          <tr class="new-row"><td class="step-num">5</td><td>自動翻譯 + 預覽表單 <span class="new-badge">NEW</span></td><td class="note-cell">解析結果填入可編輯欄位；非中/英文項目顯示「原文 → 已翻譯」提示；confidence=low 時欄位顯示橘色警示</td><td><span class="tag tag-ui">Streamlit</span></td><td class="effort">60 min</td></tr>
+          <tr><td class="step-num">6</td><td>匯率自動抓取模組</td><td class="note-cell">呼叫 frankfurter.app API 取過去 7 日平均；快取結果；顯示換算後金額預覽</td><td><span class="tag tag-api">frankfurter.app</span></td><td class="effort">45 min</td></tr>
+          <tr><td class="step-num">7</td><td>分帳計算引擎</td><td class="note-cell">支援 AA / 比例 / 指定金額三種模式；將每人 share_amount 寫入 expense_splits；金額換算為 base currency</td><td><span class="tag tag-logic">Python</span></td><td class="effort">90 min</td></tr>
+          <tr><td class="step-num">8</td><td>結算演算法</td><td class="note-cell">計算每人淨餘額；最小化轉帳次數貪心演算法；顯示「A 付給 B：XXX 元」清單；標記已結清</td><td><span class="tag tag-logic">Python</span></td><td class="effort">60 min</td></tr>
+          <tr><td class="step-num">9</td><td>花費圖表</td><td class="note-cell">圓餅圖（依類別佔比）+ 橫向長條圖（每日花費）；兩圖同步 base currency；用 Plotly 製作</td><td><span class="tag tag-lib">Plotly</span></td><td class="effort">60 min</td></tr>
+          <tr><td class="step-num">10</td><td>Tab 4：注意事項清單</td><td class="note-cell">待辦清單 + 截止日提醒；勾選狀態即時同步；按類型（門票/住宿/其他）篩選；逾期標紅</td><td><span class="tag tag-ui">Streamlit</span></td><td class="effort">60 min</td></tr>
+          <tr><td class="step-num">11</td><td>各 Tab 旅程隔離</td><td class="note-cell">所有讀寫操作加入 trip_id 過濾；確保不同旅程資料完全隔離；測試多旅程切換情境</td><td><span class="tag tag-logic">Python</span></td><td class="effort">45 min</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Phase 6 -->
+  <div class="phase" id="p6">
+    <div class="phase-header" onclick="toggle('p6')">
+      <span class="phase-badge tag-deploy">Phase 6</span>
+      <span class="phase-title">手機優化 &amp; 部署</span>
+      <span class="phase-meta">4 步驟 · ~4 hr</span>
+      <svg class="chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="phase-body" style="display:none">
+      <table class="step-table">
+        <thead><tr><th>#</th><th>步驟</th><th>說明</th><th>工具 / 服務</th><th>預估時間</th></tr></thead>
+        <tbody>
+          <tr><td class="step-num">1</td><td>響應式 CSS 注入</td><td class="note-cell">st.markdown 注入 CSS；手機螢幕：單欄、增大觸控目標、字型調整；地圖與時間軸改為垂直堆疊</td><td><span class="tag tag-ui">CSS</span></td><td class="effort">60 min</td></tr>
+          <tr><td class="step-num">2</td><td>效能優化</td><td class="note-cell">為所有 Sheets 讀取加 @st.cache_data(ttl=60)；減少不必要的 re-render；大表格分頁顯示</td><td><span class="tag tag-lib">Streamlit</span></td><td class="effort">45 min</td></tr>
+          <tr><td class="step-num">3</td><td>部署到 Streamlit Cloud</td><td class="note-cell">連結 GitHub repo；在 Cloud 設定 Secrets（gcp_service_account、maps_api_key、anthropic_api_key）；測試生產環境</td><td><span class="tag tag-deploy">Streamlit Cloud</span></td><td class="effort">30 min</td></tr>
+          <tr><td class="step-num">4</td><td>家人測試 &amp; 收尾</td><td class="note-cell">分享 URL 給家人；測試代碼加入流程、掃帳單功能；驗證手機 UI；收集回饋並修正小 bug</td><td><span class="tag tag-deploy">UAT</span></td><td class="effort">60 min</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function toggle(id){
+  const phase=document.getElementById(id);
+  const body=phase.querySelector('.phase-body');
+  const chevron=phase.querySelector('.chevron');
+  const isOpen=body.style.display!=='none';
+  body.style.display=isOpen?'none':'block';
+  chevron.classList.toggle('open',!isOpen);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>旅遊規劃 App — 專案資料夾結構</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:#1a1a1a;background:#f5f5f5;padding:2rem 1rem}
+  .container{max-width:860px;margin:0 auto}
+  h1{font-size:20px;font-weight:600;margin-bottom:4px}
+  .subtitle{font-size:13px;color:#666;margin-bottom:1.5rem}
+  .toolbar{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
+  .tbtn{font-size:12px;padding:4px 12px;border:0.5px solid #ccc;border-radius:99px;background:#fff;color:#555;cursor:pointer;transition:all .15s}
+  .tbtn:hover{background:#f0f0f0;color:#1a1a1a}
+  .tbtn.active{background:#E6F1FB;border-color:#B5D4F4;color:#0C447C;font-weight:500}
+  .tree{background:#fff;border:0.5px solid #e0e0e0;border-radius:12px;padding:1rem 1.25rem;line-height:2;font-family:'Courier New',monospace}
+  .row{display:flex;align-items:baseline;cursor:pointer;border-radius:4px;padding:0 4px;margin:0 -4px;transition:background .12s;white-space:nowrap}
+  .row:hover{background:#f5f5f5}
+  .row.selected{background:#E6F1FB}
+  .row.dimmed{opacity:.22}
+  .indent{display:inline-block;white-space:pre;color:#ccc;font-size:11px;user-select:none}
+  .icon{display:inline-block;width:16px;margin-right:4px;font-size:12px;flex-shrink:0}
+  .name{color:#1a1a1a;font-weight:400}
+  .name.dir{color:#185FA5;font-weight:600}
+  .name.key{color:#085041}
+  .name.config{color:#854F0B}
+  .name.ai{color:#72243E}
+  .badge{display:inline-block;font-size:10px;padding:1px 6px;border-radius:99px;margin-left:8px;vertical-align:middle;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;white-space:nowrap}
+  .b-phase{background:#E6F1FB;color:#0C447C;border:0.5px solid #B5D4F4}
+  .b-new{background:#FBEAF0;color:#72243E;border:0.5px solid #F4C0D1}
+  .b-core{background:#E1F5EE;color:#085041;border:0.5px solid #9FE1CB}
+  .b-data{background:#FAEEDA;color:#633806;border:0.5px solid #FAC775}
+  .b-cfg{background:#F1EFE8;color:#444441;border:0.5px solid #D3D1C7}
+  .detail{margin-top:1rem;background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;padding:1rem 1.25rem;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:90px}
+  .detail-name{font-size:14px;font-weight:600;margin-bottom:6px;color:#1a1a1a;font-family:'Courier New',monospace}
+  .detail-desc{color:#555;line-height:1.6;margin-bottom:8px;font-size:13px}
+  .detail-tags{display:flex;gap:6px;flex-wrap:wrap}
+  .dtag{font-size:11px;padding:2px 8px;border-radius:99px;border:0.5px solid #e0e0e0;color:#888;background:#fafafa}
+  .placeholder{color:#bbb;font-size:13px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>旅遊規劃 App — 專案資料夾結構</h1>
+  <div class="subtitle">點擊任一檔案或資料夾查看說明 · 頂端按鈕依 Phase 篩選</div>
+
+  <div class="toolbar" id="toolbar">
+    <button class="tbtn active" onclick="filterPhase('all', this)">全部</button>
+    <button class="tbtn" onclick="filterPhase('p1', this)">Phase 1–2 基礎</button>
+    <button class="tbtn" onclick="filterPhase('p3', this)">Phase 3 身份</button>
+    <button class="tbtn" onclick="filterPhase('p4', this)">Phase 4 地圖</button>
+    <button class="tbtn" onclick="filterPhase('p5', this)">Phase 5 花費</button>
+    <button class="tbtn" onclick="filterPhase('p6', this)">Phase 6 部署</button>
+  </div>
+
+  <div class="tree" id="tree"></div>
+  <div class="detail" id="detail">
+    <div class="placeholder">點擊任一檔案或資料夾查看說明</div>
+  </div>
+</div>
+
+<script>
+const files = [
+  {id:'root',indent:0,icon:'📁',name:'travel-app/',cls:'dir',phase:'all',
+   desc:'專案根目錄。所有程式碼、設定檔都在這裡。對應整個 Action Plan。',tags:['根目錄']},
+  {id:'app',indent:1,icon:'▶',name:'app.py',cls:'key',phase:'p1',badge:'core',badgeText:'核心進入點',
+   desc:'Streamlit 主程式。負責：(1) 呼叫 auth.py 驗證身份、(2) 依 session 載入對應旅程、(3) 渲染四個主要 Tab。所有頁面邏輯從這裡分派出去。',tags:['Phase 1','啟動點','st.tabs']},
+  {id:'req',indent:1,icon:'📄',name:'requirements.txt',cls:'config',phase:'p1',badge:'cfg',badgeText:'設定',
+   desc:'列出所有 pip 依賴：streamlit、gspread、pandas、plotly、requests、anthropic。部署到 Streamlit Cloud 時會自動讀取安裝。',tags:['Phase 1','部署必要']},
+  {id:'readme',indent:1,icon:'📄',name:'README.md',cls:'',phase:'p6',
+   desc:'專案說明文件。記錄：如何在本地執行、secrets 設定方式、Google Sheets 欄位說明、給家人的使用說明連結。',tags:['Phase 6','文件']},
+  {id:'gitignore',indent:1,icon:'📄',name:'.gitignore',cls:'config',phase:'p1',badge:'cfg',badgeText:'設定',
+   desc:'確保 .streamlit/secrets.toml 和 venv/ 不會被推上 GitHub，防止 API 金鑰外洩。',tags:['Phase 1','資安']},
+  {id:'stdir',indent:1,icon:'📁',name:'.streamlit/',cls:'dir',phase:'p1',
+   desc:'Streamlit 設定資料夾。包含 secrets（金鑰）和 config（主題顏色、字型等 UI 設定）。',tags:['Phase 1','設定']},
+  {id:'secrets',indent:2,icon:'📄',name:'secrets.toml',cls:'config',phase:'p1',badge:'cfg',badgeText:'機密',
+   desc:'存放三組金鑰：gcp_service_account（Google Sheets 存取）、maps_api_key（地圖功能）、anthropic_api_key（帳單掃描 AI）。本地開發用，不推上 GitHub。Streamlit Cloud 另行在後台設定。',tags:['Phase 1','Phase 4','Phase 5 NEW']},
+  {id:'config',indent:2,icon:'📄',name:'config.toml',cls:'config',phase:'p6',badge:'cfg',badgeText:'設定',
+   desc:'設定 App 主題色、字型、sidebar 預設開合狀態。手機優化時在這裡調整 layout="wide" 等參數。',tags:['Phase 6']},
+  {id:'pages',indent:1,icon:'📁',name:'pages/',cls:'dir',phase:'p3',
+   desc:'Streamlit multi-page 架構的頁面資料夾。每個 .py 檔自動對應一個頁面，檔名前的數字決定順序。',tags:['Phase 3–5','多頁面']},
+  {id:'p0home',indent:2,icon:'▶',name:'0_home.py',cls:'key',phase:'p3',badge:'p3',badgeText:'Phase 3',
+   desc:'首頁。功能：建立新旅程（產生 6 位 join_code）、輸入代碼加入旅程、顯示「我的旅程」清單、切換旅程。呼叫 auth.py 中的 create_trip() 和 join_trip()。',tags:['Phase 3','身份系統','join_code']},
+  {id:'p1itin',indent:2,icon:'▶',name:'1_itinerary.py',cls:'',phase:'p4',badge:'p4',badgeText:'Phase 4',
+   desc:'Tab 1 行程總表頁面。上半部：互動式時間軸 + Google Maps Embed 地圖並排。下半部：st.data_editor 行程表格 CRUD。包含整趟路線連結和單點連結產生邏輯。',tags:['Phase 4','地圖','時間軸']},
+  {id:'p2attr',indent:2,icon:'▶',name:'2_attractions.py',cls:'',phase:'p5',badge:'p5',badgeText:'Phase 5',
+   desc:'Tab 2 景點介紹頁面。卡片式排列，每張卡片顯示圖片、描述、tips。支援新增/編輯景點，按地點篩選。',tags:['Phase 5']},
+  {id:'p3exp',indent:2,icon:'▶',name:'3_expenses.py',cls:'',phase:'p5',badge:'p5',badgeText:'Phase 5',
+   desc:'Tab 3 花費總覽頁面。上方「掃描帳單」按鈕 + 手動輸入表單。中間圓餅圖 + 橫向長條圖。下方分帳結算清單（誰付給誰多少）。',tags:['Phase 5','掃帳單','分帳','圖表']},
+  {id:'p4notes',indent:2,icon:'▶',name:'4_notes.py',cls:'',phase:'p5',badge:'p5',badgeText:'Phase 5',
+   desc:'Tab 4 注意事項頁面。待辦清單格式，含截止日提醒、勾選狀態同步、逾期標紅、按類型篩選。',tags:['Phase 5']},
+  {id:'modules',indent:1,icon:'📁',name:'modules/',cls:'dir',phase:'p1',
+   desc:'核心業務邏輯模組資料夾。所有非 UI 的功能都放這裡，與頁面完全分離，方便單獨測試和維護。',tags:['所有 Phase','模組化']},
+  {id:'authpy',indent:2,icon:'▶',name:'auth.py',cls:'key',phase:'p3',badge:'p3',badgeText:'Phase 3',
+   desc:'身份驗證模組。提供：create_trip()（產生 join_code 寫入 Sheets）、join_trip()（驗證代碼 + 寫入 members）、get_current_user()（從 session_state 取得當前使用者）、require_auth()（守門員，未登入則重導首頁）。',tags:['Phase 3','session_state']},
+  {id:'dbpy',indent:2,icon:'▶',name:'db.py',cls:'key',phase:'p2',badge:'p2',badgeText:'Phase 2',
+   desc:'Google Sheets 資料層模組。封裝所有 gspread 操作：read_sheet(sheet_name, trip_id)、append_row()、update_row()、delete_row()。加入 @st.cache_data(ttl=60) 避免重複讀取。所有頁面透過此模組存取資料，不直接操作 gspread。',tags:['Phase 2','gspread','快取']},
+  {id:'scanpy',indent:2,icon:'▶',name:'receipt_scanner.py',cls:'ai',phase:'p5',badge:'new',badgeText:'NEW',
+   desc:'帳單掃描 AI 模組。流程：接收圖片 bytes → base64 編碼 → 呼叫 claude-sonnet-4-6 Vision API → 解析 JSON 回傳（類別、item_zh、item_original、was_translated、amount、currency、confidence）。confidence=low 時加入警示旗標供 UI 顯示。',tags:['Phase 5 NEW','Claude Vision','Anthropic API']},
+  {id:'fxpy',indent:2,icon:'▶',name:'fx.py',cls:'',phase:'p5',badge:'p5',badgeText:'Phase 5',
+   desc:'匯率模組。呼叫 frankfurter.app API 取過去 7 日平均匯率。以 (from_currency, to_currency) 為 key 快取結果。提供 get_rate(from, to) 和 convert(amount, from, to) 兩個函式。',tags:['Phase 5','frankfurter.app','匯率']},
+  {id:'splitpy',indent:2,icon:'▶',name:'split.py',cls:'',phase:'p5',badge:'p5',badgeText:'Phase 5',
+   desc:'分帳計算引擎。支援三種模式：AA（總額/人數）、比例（自訂比例）、指定金額。計算每人 share_amount 並寫入 expense_splits。settle() 函式實作最小化轉帳次數貪心演算法，回傳「A 付給 B：X 元」清單。',tags:['Phase 5','分帳算法']},
+  {id:'mapspy',indent:2,icon:'▶',name:'maps.py',cls:'',phase:'p4',badge:'p4',badgeText:'Phase 4',
+   desc:'地圖工具模組。提供：build_single_url(location) 產生單點 maps/search 連結、build_route_url(stops) 產生整趟 maps/dir + waypoints 連結、geocode(location) 呼叫 Geocoding API 取得 lat/lng。',tags:['Phase 4','Google Maps','Geocoding']},
+  {id:'components',indent:1,icon:'📁',name:'components/',cls:'dir',phase:'p4',
+   desc:'可重用的 Streamlit 自訂元件資料夾。存放需要注入 HTML/CSS/JS 的複雜 UI 元件，與頁面邏輯分離。',tags:['Phase 4–5','UI 元件']},
+  {id:'timelinepy',indent:2,icon:'▶',name:'timeline.py',cls:'',phase:'p4',badge:'p4',badgeText:'Phase 4',
+   desc:'互動式時間軸元件。用 st.components.v1.html() 渲染 HTML+JS 時間軸；接收行程資料清單，點擊停留點時透過 JS 事件通知 Streamlit；手機版自動單欄排列。',tags:['Phase 4','st.components','時間軸']},
+  {id:'mapembed',indent:2,icon:'▶',name:'map_embed.py',cls:'',phase:'p4',badge:'p4',badgeText:'Phase 4',
+   desc:'Google Maps Embed 元件。產生包含 Maps Embed API iframe 的 HTML 字串；接收停留點清單動態產生 markers；支援從時間軸同步高亮選中的節點。',tags:['Phase 4','Maps Embed API']},
+  {id:'scanui',indent:2,icon:'▶',name:'scan_ui.py',cls:'ai',phase:'p5',badge:'new',badgeText:'NEW',
+   desc:'帳單掃描 UI 元件。包含完整的四步流程：上傳/拍照 → loading spinner → 可編輯預覽表單 → 儲存確認。呼叫 modules/receipt_scanner.py 處理 AI 邏輯，自身只負責 UI 渲染和使用者互動。',tags:['Phase 5 NEW','Claude Vision UI']},
+  {id:'assets',indent:1,icon:'📁',name:'assets/',cls:'dir',phase:'p6',
+   desc:'靜態資源資料夾。存放 App 用到的 CSS 樣式、圖示、預設圖片等。',tags:['Phase 6']},
+  {id:'stylecss',indent:2,icon:'📄',name:'style.css',cls:'config',phase:'p6',badge:'cfg',badgeText:'設定',
+   desc:'全域響應式 CSS。手機優化樣式：單欄 layout、觸控目標最小 44px、字型大小調整、地圖與時間軸垂直堆疊。透過 app.py 的 st.markdown 注入。',tags:['Phase 6','手機優化','RWD']},
+  {id:'tests',indent:1,icon:'📁',name:'tests/',cls:'dir',phase:'p5',
+   desc:'單元測試資料夾。優先測試分帳計算和匯率換算這兩個純邏輯模組，確保計算結果正確再整合進 UI。',tags:['Phase 5','測試']},
+  {id:'tsplit',indent:2,icon:'▶',name:'test_split.py',cls:'',phase:'p5',
+   desc:'測試 split.py 的計算邏輯。覆蓋：AA 分帳精度、比例分帳浮點誤差、結算演算法最小轉帳數驗證、邊界情況（單人、已結清）。',tags:['Phase 5','測試']},
+  {id:'tfx',indent:2,icon:'▶',name:'test_fx.py',cls:'',phase:'p5',
+   desc:'測試 fx.py 的匯率邏輯。使用 mock 替換 API 呼叫，測試快取命中/未命中、不支援幣別的錯誤處理。',tags:['Phase 5','測試']},
+];
+
+const phaseMap = {
+  'all': () => true,
+  'p1': f => ['p1','p2','all'].includes(f.phase),
+  'p3': f => f.phase==='p3' || f.phase==='all',
+  'p4': f => f.phase==='p4' || f.phase==='all',
+  'p5': f => f.phase==='p5' || f.phase==='all',
+  'p6': f => f.phase==='p6' || f.phase==='all',
+};
+
+let currentFilter = 'all';
+let selectedId = null;
+
+function renderTree() {
+  const tree = document.getElementById('tree');
+  tree.innerHTML = '';
+  const filter = phaseMap[currentFilter];
+  files.forEach(f => {
+    const visible = currentFilter === 'all' || filter(f);
+    const row = document.createElement('div');
+    row.className = 'row' + (selectedId === f.id ? ' selected' : '') + (!visible ? ' dimmed' : '');
+    row.dataset.id = f.id;
+    const ind = '  '.repeat(f.indent);
+    const iconStr = f.icon === '📁'
+      ? '<span class="icon" style="color:#378ADD;font-size:11px">▸</span>'
+      : f.icon === '▶'
+      ? '<span class="icon" style="color:#bbb;font-size:10px">◆</span>'
+      : `<span class="icon" style="font-size:11px">${f.icon}</span>`;
+    const badgeStr = f.badge ? `<span class="badge b-${f.badge}">${f.badgeText}</span>` : '';
+    row.innerHTML = `<span class="indent">${ind}</span>${iconStr}<span class="name ${f.cls || ''}">${f.name}</span>${badgeStr}`;
+    row.addEventListener('click', () => selectFile(f.id));
+    tree.appendChild(row);
+  });
+}
+
+function selectFile(id) {
+  selectedId = id;
+  const f = files.find(x => x.id === id);
+  const det = document.getElementById('detail');
+  if (!f) { det.innerHTML = ''; return; }
+  const tagHtml = (f.tags || []).map(t => `<span class="dtag">${t}</span>`).join('');
+  det.innerHTML = `<div class="detail-name">${f.name}</div><div class="detail-desc">${f.desc}</div><div class="detail-tags">${tagHtml}</div>`;
+  renderTree();
+}
+
+function filterPhase(phase, el) {
+  currentFilter = phase;
+  document.querySelectorAll('.tbtn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderTree();
+}
+
+renderTree();
+</script>
+</body>
+</html>

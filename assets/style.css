@@ -1,0 +1,30 @@
+/* ========== 手機響應式 ========== */
+@media (max-width: 768px) {
+
+  /* 增大所有按鈕觸控目標 */
+  .stButton > button {
+    min-height: 44px;
+    font-size: 16px;
+    width: 100%;
+  }
+
+  /* 輸入框放大字型，防止 iOS 自動縮放 */
+  .stTextInput input,
+  .stSelectbox select,
+  .stNumberInput input {
+    font-size: 16px !important;
+    min-height: 44px;
+  }
+
+  /* 地圖與時間軸改為垂直堆疊 */
+  [data-testid="column"] {
+    width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+
+  /* 卡片 padding 縮小 */
+  [data-testid="stVerticalBlock"] > div {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+}

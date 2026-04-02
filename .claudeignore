@@ -1,0 +1,14 @@
+# 屏蔽 Streamlit 的金鑰檔案
+**/.streamlit/secrets.toml
+**/secrets.toml
+.streamlit/*
+
+# 屏蔽 Python 虛擬環境（避免 Claude 掃描大量第三方庫，浪費 token 且沒意義）
+venv/
+
+# 屏蔽快取檔案
+__pycache__/
+.pytest_cache/
+
+# 屏蔽 git 紀錄
+.git/

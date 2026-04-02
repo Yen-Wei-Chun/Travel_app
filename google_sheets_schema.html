@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>旅遊規劃 App — Google Sheets Schema</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:#1a1a1a;background:#f5f5f5;padding:2rem 1rem}
+  .container{max-width:860px;margin:0 auto}
+  h1{font-size:20px;font-weight:600;margin-bottom:4px}
+  .subtitle{font-size:13px;color:#666;margin-bottom:1.5rem}
+  .sheet-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem}
+  .tab{font-size:12px;padding:5px 12px;border:0.5px solid #ccc;border-radius:99px;cursor:pointer;background:#fff;color:#555;transition:all .15s}
+  .tab:hover{background:#f0f0f0}
+  .tab.active{border-color:#B5D4F4;background:#E6F1FB;color:#0C447C;font-weight:600}
+  .sheet-panel{display:none;background:#fff;border:0.5px solid #e0e0e0;border-radius:12px;overflow:hidden}
+  .sheet-panel.active{display:block}
+  .sheet-header{padding:14px 16px;border-bottom:0.5px solid #e0e0e0}
+  .sheet-name{font-size:15px;font-weight:600;font-family:'Courier New',monospace;margin-bottom:3px}
+  .sheet-desc{font-size:12px;color:#666}
+  .col-table{width:100%;border-collapse:collapse}
+  .col-table th{font-size:11px;font-weight:600;color:#888;padding:7px 14px;text-align:left;background:#fafafa;border-bottom:0.5px solid #e0e0e0;letter-spacing:.04em}
+  .col-table th:nth-child(1){width:22%}
+  .col-table th:nth-child(2){width:14%}
+  .col-table th:nth-child(3){width:32%}
+  .col-table th:nth-child(4){width:32%}
+  .col-table td{padding:8px 14px;border-bottom:0.5px solid #f0f0f0;vertical-align:top;font-size:12px}
+  .col-table tr:last-child td{border-bottom:none}
+  .col-table tr:hover td{background:#fafafa}
+  .col-name{font-family:'Courier New',monospace;font-size:12px;color:#1a1a1a}
+  .tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:99px;white-space:nowrap;margin-right:3px}
+  .pk{background:#E1F5EE;color:#085041;border:0.5px solid #9FE1CB}
+  .fk{background:#E6F1FB;color:#0C447C;border:0.5px solid #B5D4F4}
+  .req{background:#FAEEDA;color:#633806;border:0.5px solid #FAC775}
+  .auto{background:#EEEDFE;color:#3C3489;border:0.5px solid #CECBF6}
+  .example{font-size:11px;color:#999;font-family:'Courier New',monospace}
+  .note{font-size:11px;color:#555;line-height:1.5}
+  .copy-btn{font-size:12px;padding:8px 14px;border:0.5px solid #ccc;border-radius:8px;background:#fff;color:#555;cursor:pointer;margin:12px 14px;display:inline-block}
+  .copy-btn:hover{background:#f0f0f0}
+  .copied{color:#085041;border-color:#9FE1CB;background:#E1F5EE}
+  .legend{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:1rem;font-size:11px;align-items:center}
+  .legend-item{display:flex;align-items:center;gap:4px;color:#555}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>旅遊規劃 App — Google Sheets Schema</h1>
+  <div class="subtitle">8 個分頁的欄位設計 · 點分頁標籤切換 · 點按鈕複製欄位標題</div>
+
+  <div class="legend">
+    <span style="color:#888;font-size:11px">圖例：</span>
+    <span class="legend-item"><span class="tag pk">PK</span> 主鍵（唯一識別碼）</span>
+    <span class="legend-item"><span class="tag fk">FK</span> 外鍵（關聯其他表）</span>
+    <span class="legend-item"><span class="tag req">必填</span> 必填欄位</span>
+    <span class="legend-item"><span class="tag auto">自動</span> 程式自動填入</span>
+  </div>
+
+  <div class="sheet-tabs">
+    <button class="tab active" onclick="showSheet('trips', this)">trips</button>
+    <button class="tab" onclick="showSheet('members', this)">members</button>
+    <button class="tab" onclick="showSheet('itinerary', this)">itinerary</button>
+    <button class="tab" onclick="showSheet('attractions', this)">attractions</button>
+    <button class="tab" onclick="showSheet('expenses', this)">expenses</button>
+    <button class="tab" onclick="showSheet('expense_splits', this)">expense_splits</button>
+    <button class="tab" onclick="showSheet('notes', this)">notes</button>
+    <button class="tab" onclick="showSheet('fx_cache', this)">fx_cache</button>
+  </div>
+
+  <!-- trips -->
+  <div id="sheet-trips" class="sheet-panel active">
+    <div class="sheet-header">
+      <div class="sheet-name">trips</div>
+      <div class="sheet-desc">每趟旅程的基本資料，一筆記錄 = 一趟旅程</div>
+    </div>
+    <table class="col-table">
+      <thead><tr><th>欄位名稱</th><th>類型</th><th>說明</th><th>範例值</th></tr></thead>
+      <tbody>
+        <tr><td><span class="col-name">trip_id</span></td><td><span class="tag pk">PK</span><span class="tag auto">自動</span></td><td class="note">唯一識別碼，用 uuid4 前 8 碼產生</td><td><span class="example">a1b2c3d4</span></td></tr>
+        <tr><td><span class="col-name">join_code</span></td><td><span class="tag req">必填</span></td><td class="note">6位大寫英數代碼，家人輸入此代碼加入旅程</td><td><span class="example">JP2025</span></td></tr>
+        <tr><td><span class="col-name">trip_name</span></td><td><span class="tag req">必填</span></td><td class="note">旅程名稱</td><td><span class="example">日本關西五日遊</span></td></tr>
+        <tr><td><span class="col-name">start_date</span></td><td><span class="tag req">必填</span></td><td class="note">出發日期</td><td><span class="example">2025-04-10</span></td></tr>
+        <tr><td><span class="col-name">end_date</span></td><td><span class="tag req">必填</span></td><td class="note">回程日期</td><td><span class="example">2025-04-14</span></td></tr>
+        <tr><td><span class="col-name">base_currency</span></td><td><span class="tag req">必填</span></td><td class="note">結算用基準幣別，所有花費最終換算成此幣別</td><td><span class="example">TWD</span></td></tr>
+        <tr><td><span class="col-name">created_at</span></td><td><span class="tag auto">自動</span></td><td class="note">建立旅程的時間戳記</td><td><span class="example">2025-03-01 10:30:00</span></td></tr>
+      </tbody>
+    </table>
+    <button class="copy-btn" onclick="copyHeaders('trips', this)">複製欄位標題（貼入 Sheets 第一列）</button>
+  </div>
+
+  <!-- members -->
+  <div id="sheet-members" class="sheet-panel">
+    <div class="sheet-header">
+      <div class="sheet-name">members</div>
+      <div class="sheet-desc">每趟旅程的成員名單，一筆記錄 = 一位成員加入一趟旅程</div>
+    </div>
+    <table class="col-table">
+      <thead><tr><th>欄位名稱</th><th>類型</th><th>說明</th><th>範例值</th></tr></thead>
+      <tbody>
+        <tr><td><span class="col-name">member_id</span></td><td><span class="tag pk">PK</span><span class="tag auto">自動</span></td><td class="note">唯一識別碼</td><td><span class="example">m_a1b2c3d4</span></td></tr>
+        <tr><td><span class="col-name">trip_id</span></td><td><span class="tag fk">FK</span><span class="tag req">必填</span></td><td class="note">對應 trips.trip_id</td><td><span class="example">a1b2c3d4</span></td></tr>
+        <tr><td><span class="col-name">name</span></td><td><span class="tag req">必填</span></td><td class="note">成員名字，同一趟旅程內不可重複</td><td><span class="example">小明</span></td></tr>
+        <tr><td><span class="col-name">joined_at</span></td><td><span class="tag auto">自動</span></td><td class="note">加入旅程的時間戳記</td><td><span class="example">2025-03-01 11:00:00</span></td></tr>
+      </tbody>
+    </table>
+    <button class="copy-btn" onclick="copyHeaders('members', this)">複製欄位標題（貼入 Sheets 第一列）</button>
+  </div>
+
+  <!-- itinerary -->
+  <div id="sheet-itinerary" class="sheet-panel">
+    <div class="sheet-header">
+      <div class="sheet-name">itinerary</div>
+      <div class="sheet-desc">行程總表，一筆記錄 = 一個停留點。lat/lng 供地圖定位用</div>
+    </div>
+    <table class="col-table">
+      <thead><tr><th>欄位名稱</th><th>類型</th><th>說明</th><th>範例值</th></tr></thead>
+      <tbody>
+        <tr><td><span class="col-name">row_id</span></td><td><span class="tag pk">PK</span><span class="tag auto">自動</span></td><td class="note">唯一識別碼</td><td><span class="example">it_a1b2c3d4</span></td></tr>
+        <tr><td><span class="col-name">trip_id</span></td><td><span class="tag fk">FK</span><span class="tag req">必填</span></td><td class="note">對應 trips.trip_id</td><td><span class="example">a1b2c3d4</span></td></tr>
+        <tr><td><span class="col-name">date</span></td><td><span class="tag req">必填</span></td><td class="note">該停留點的日期</td><td><span class="example">2025-04-11</span></td></tr>
+        <tr><td><span class="col-name">location</span></td><td><span class="tag req">必填</span></td><td class="note">地點名稱，Geocoding API 用此欄位查詢座標</td><td><span class="example">大阪城公園</span></td></tr>
+        <tr><td><span class="col-name">route</span></td><td></td><td class="note">從上一個停留點到此地點的路徑描述</td><td><span class="example">從難波站搭地鐵</span></td></tr>
+        <tr><td><span class="col-name">transport</span></td><td></td><td class="note">交通方式</td><td><span class="example">地鐵</span></td></tr>
+        <tr><td><span class="col-name">duration</span></td><td></td><td class="note">預計停留時間</td><td><span class="example">2hr</span></td></tr>
+        <tr><td><span class="col-name">highlights</span></td><td></td><td class="note">景點概覽或備註</td><td><span class="example">天守閣、護城河散步</span></td></tr>
+        <tr><td><span class="col-name">lat</span></td><td><span class="tag auto">自動</span></td><td class="note">緯度，由 Geocoding API 自動填入</td><td><span class="example">34.6873</span></td></tr>
+        <tr><td><span class="col-name">lng</span></td><td><span class="tag auto">自動</span></td><td class="note">經度，由 Geocoding API 自動填入</td><td><span class="example">135.5262</span></td></tr>
+      </tbody>
+    </table>
+    <button class="copy-btn" onclick="copyHeaders('itinerary', this)">複製欄位標題（貼入 Sheets 第一列）</button>
+  </div>
+
+  <!-- attractions -->
+  <div id="sheet-attractions" class="sheet-panel">
+    <div class="sheet-header">
+      <div class="sheet-name">attractions</div>
+      <div class="sheet-desc">景點介紹卡片，一筆記錄 = 一個景點</div>
+    </div>
+    <table class="col-table">
+      <thead><tr><th>欄位名稱</th><th>類型</th><th>說明</th><th>範例值</th></tr></thead>
+      <tbody>
+        <tr><td><span class="col-name">attr_id</span></td><td><span class="tag pk">PK</span><span class="tag auto">自動</span></td><td class="note">唯一識別碼</td><td><span class="example">at_a1b2c3d4</span></td></tr>
+        <tr><td><span class="col-name">trip_id</span></td><td><span class="tag fk">FK</span><span class="tag req">必填</span></td><td class="note">對應 trips.trip_id</td><td><span class="example">a1b2c3d4</span></td></tr>
+        <tr><td><span class="col-name">name</span></td><td><span class="tag req">必填</span></td><td class="note">景點名稱</td><td><span class="example">伏見稻荷大社</span></td></tr>
+        <tr><td><span class="col-name">location</span></td><td></td><td class="note">所在地區</td><td><span class="example">京都市伏見區</span></td></tr>
+        <tr><td><span class="col-name">description</span></td><td></td><td class="note">景點簡介</td><td><span class="example">以千本鳥居聞名的神社</span></td></tr>
+        <tr><td><span class="col-name">tips</span></td><td></td><td class="note">實用小貼士</td><td><span class="example">清晨人少，建議早上8點前抵達</span></td></tr>
+        <tr><td><span class="col-name">image_url</span></td><td></td><td class="note">景點圖片網址</td><td><span class="example">https://...</span></td></tr>
+      </tbody>
+    </table>
+    <button class="copy-btn" onclick="copyHeaders('attractions', this)">複製欄位標題（貼入 Sheets 第一列）</button>
+  </div>
+
+  <!-- expenses -->
+  <div id="sheet-expenses" class="sheet-panel">
+    <div class="sheet-header">
+      <div class="sheet-name">expenses</div>
+      <div class="sheet-desc">花費主表，一筆記錄 = 一筆支出。原始幣別和換算後金額都保留</div>
+    </div>
+    <table class="col-table">
+      <thead><tr><th>欄位名稱</th><th>類型</th><th>說明</th><th>範例值</th></tr></thead>
+      <tbody>
+        <tr><td><span class="col-name">expense_id</span></td><td><span class="tag pk">PK</span><span class="tag auto">自動</span></td><td class="note">唯一識別碼</td><td><span class="example">ex_a1b2c3d4</span></td></tr>
+        <tr><td><span class="col-name">trip_id</span></td><td><span class="tag fk">FK</span><span class="tag req">必填</span></td><td class="note">對應 trips.trip_id</td><td><span class="example">a1b2c3d4</span></td></tr>
+        <tr><td><span class="col-name">paid_by</span></td><td><span class="tag req">必填</span></td><td class="note">付款人名字，對應 members.name</td><td><span class="example">小明</span></td></tr>
+        <tr><td><span class="col-name">date</span></td><td><span class="tag req">必填</span></td><td class="note">消費日期</td><td><span class="example">2025-04-11</span></td></tr>
+        <tr><td><span class="col-name">category</span></td><td><span class="tag req">必填</span></td><td class="note">類別</td><td><span class="example">餐飲</span></td></tr>
+        <tr><td><span class="col-name">description</span></td><td></td><td class="note">項目名稱（中文），掃帳單時自動填入</td><td><span class="example">拉麵套餐</span></td></tr>
+        <tr><td><span class="col-name">description_original</span></td><td></td><td class="note">項目原始文字，非中英文時保留原文</td><td><span class="example">ラーメンセット</span></td></tr>
+        <tr><td><span class="col-name">amount_orig</span></td><td><span class="tag req">必填</span></td><td class="note">原始幣別金額</td><td><span class="example">980</span></td></tr>
+        <tr><td><span class="col-name">orig_currency</span></td><td><span class="tag req">必填</span></td><td class="note">原始幣別代碼</td><td><span class="example">JPY</span></td></tr>
+        <tr><td><span class="col-name">fx_rate</span></td><td><span class="tag auto">自動</span></td><td class="note">當時匯率（orig → base），由 fx.py 填入</td><td><span class="example">0.2134</span></td></tr>
+        <tr><td><span class="col-name">amount_base</span></td><td><span class="tag auto">自動</span></td><td class="note">換算後的 base currency 金額</td><td><span class="example">209</span></td></tr>
+        <tr><td><span class="col-name">split_type</span></td><td><span class="tag req">必填</span></td><td class="note">分帳方式：AA / 比例 / 指定</td><td><span class="example">AA</span></td></tr>
+        <tr><td><span class="col-name">created_at</span></td><td><span class="tag auto">自動</span></td><td class="note">記帳時間戳記</td><td><span class="example">2025-04-11 12:30:00</span></td></tr>
+      </tbody>
+    </table>
+    <button class="copy-btn" onclick="copyHeaders('expenses', this)">複製欄位標題（貼入 Sheets 第一列）</button>
+  </div>
+
+  <!-- expense_splits -->
+  <div id="sheet-expense_splits" class="sheet-panel">
+    <div class="sheet-header">
+      <div class="sheet-name">expense_splits</div>
+      <div class="sheet-desc">每筆花費的分帳明細，一筆記錄 = 某人在某筆花費中應付的金額</div>
+    </div>
+    <table class="col-table">
+      <thead><tr><th>欄位名稱</th><th>類型</th><th>說明</th><th>範例值</th></tr></thead>
+      <tbody>
+        <tr><td><span class="col-name">split_id</span></td><td><span class="tag pk">PK</span><span class="tag auto">自動</span></td><td class="note">唯一識別碼</td><td><span class="example">sp_a1b2c3d4</span></td></tr>
+        <tr><td><span class="col-name">expense_id</span></td><td><span class="tag fk">FK</span><span class="tag req">必填</span></td><td class="note">對應 expenses.expense_id</td><td><span class="example">ex_a1b2c3d4</span></td></tr>
+        <tr><td><span class="col-name">trip_id</span></td><td><span class="tag fk">FK</span><span class="tag req">必填</span></td><td class="note">對應 trips.trip_id，方便查詢時直接篩選</td><td><span class="example">a1b2c3d4</span></td></tr>
+        <tr><td><span class="col-name">member_name</span></td><td><span class="tag req">必填</span></td><td class="note">應分攤此筆花費的成員名字</td><td><span class="example">小華</span></td></tr>
+        <tr><td><span class="col-name">share_amount</span></td><td><span class="tag req">必填</span></td><td class="note">該成員應付金額（base currency）</td><td><span class="example">52.25</span></td></tr>
+        <tr><td><span class="col-name">is_settled</span></td><td></td><td class="note">是否已結清，預設 FALSE</td><td><span class="example">FALSE</span></td></tr>
+      </tbody>
+    </table>
+    <button class="copy-btn" onclick="copyHeaders('expense_splits', this)">複製欄位標題（貼入 Sheets 第一列）</button>
+  </div>
+
+  <!-- notes -->
+  <div id="sheet-notes" class="sheet-panel">
+    <div class="sheet-header">
+      <div class="sheet-name">notes</div>
+      <div class="sheet-desc">注意事項與待辦清單，一筆記錄 = 一個待辦項目</div>
+    </div>
+    <table class="col-table">
+      <thead><tr><th>欄位名稱</th><th>類型</th><th>說明</th><th>範例值</th></tr></thead>
+      <tbody>
+        <tr><td><span class="col-name">note_id</span></td><td><span class="tag pk">PK</span><span class="tag auto">自動</span></td><td class="note">唯一識別碼</td><td><span class="example">nt_a1b2c3d4</span></td></tr>
+        <tr><td><span class="col-name">trip_id</span></td><td><span class="tag fk">FK</span><span class="tag req">必填</span></td><td class="note">對應 trips.trip_id</td><td><span class="example">a1b2c3d4</span></td></tr>
+        <tr><td><span class="col-name">type</span></td><td><span class="tag req">必填</span></td><td class="note">類型，用於篩選</td><td><span class="example">門票 / 住宿 / 其他</span></td></tr>
+        <tr><td><span class="col-name">title</span></td><td><span class="tag req">必填</span></td><td class="note">待辦事項標題</td><td><span class="example">預訂環球影城門票</span></td></tr>
+        <tr><td><span class="col-name">content</span></td><td></td><td class="note">詳細說明或備註</td><td><span class="example">需提前60天購買Express Pass</span></td></tr>
+        <tr><td><span class="col-name">deadline</span></td><td></td><td class="note">截止日期，逾期時 UI 標紅</td><td><span class="example">2025-02-10</span></td></tr>
+        <tr><td><span class="col-name">done</span></td><td></td><td class="note">是否完成，預設 FALSE</td><td><span class="example">FALSE</span></td></tr>
+      </tbody>
+    </table>
+    <button class="copy-btn" onclick="copyHeaders('notes', this)">複製欄位標題（貼入 Sheets 第一列）</button>
+  </div>
+
+  <!-- fx_cache -->
+  <div id="sheet-fx_cache" class="sheet-panel">
+    <div class="sheet-header">
+      <div class="sheet-name">fx_cache</div>
+      <div class="sheet-desc">匯率快取表，避免重複呼叫 frankfurter.app API。每個幣別對一筆記錄</div>
+    </div>
+    <table class="col-table">
+      <thead><tr><th>欄位名稱</th><th>類型</th><th>說明</th><th>範例值</th></tr></thead>
+      <tbody>
+        <tr><td><span class="col-name">cache_key</span></td><td><span class="tag pk">PK</span></td><td class="note">幣別對組合，格式為 FROM_TO</td><td><span class="example">JPY_TWD</span></td></tr>
+        <tr><td><span class="col-name">rate</span></td><td></td><td class="note">過去 7 日平均匯率</td><td><span class="example">0.2134</span></td></tr>
+        <tr><td><span class="col-name">updated_at</span></td><td></td><td class="note">最後更新時間，超過 24 小時自動重新抓取</td><td><span class="example">2025-04-11 08:00:00</span></td></tr>
+      </tbody>
+    </table>
+    <button class="copy-btn" onclick="copyHeaders('fx_cache', this)">複製欄位標題（貼入 Sheets 第一列）</button>
+  </div>
+
+</div>
+
+<script>
+const headers = {
+  trips: ['trip_id','join_code','trip_name','start_date','end_date','base_currency','created_at'],
+  members: ['member_id','trip_id','name','joined_at'],
+  itinerary: ['row_id','trip_id','date','location','route','transport','duration','highlights','lat','lng'],
+  attractions: ['attr_id','trip_id','name','location','description','tips','image_url'],
+  expenses: ['expense_id','trip_id','paid_by','date','category','description','description_original','amount_orig','orig_currency','fx_rate','amount_base','split_type','created_at'],
+  expense_splits: ['split_id','expense_id','trip_id','member_name','share_amount','is_settled'],
+  notes: ['note_id','trip_id','type','title','content','deadline','done'],
+  fx_cache: ['cache_key','rate','updated_at']
+};
+
+function showSheet(name, el) {
+  document.querySelectorAll('.sheet-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('sheet-' + name).classList.add('active');
+  el.classList.add('active');
+}
+
+function copyHeaders(name, btn) {
+  const text = headers[name].join('\t');
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '已複製！貼到 Sheets 第一列 A1 格';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = '複製欄位標題（貼入 Sheets 第一列）';
+      btn.classList.remove('copied');
+    }, 2500);
+  });
+}
+</script>
+</body>
+</html>
